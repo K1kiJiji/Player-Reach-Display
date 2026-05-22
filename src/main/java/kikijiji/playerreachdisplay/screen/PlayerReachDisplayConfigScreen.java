@@ -14,10 +14,13 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 
+import net.minecraft.client.gui.Click;
+import net.minecraft.client.input.KeyInput;
+import net.minecraft.client.input.CharInput;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.SliderWidget;
 import net.minecraft.client.gui.widget.ClickableWidget;
@@ -1184,7 +1187,14 @@ public class PlayerReachDisplayConfigScreen extends Screen
         int leftWidth   = centerX + this.width / 6;
         int leftCenterX = leftWidth / 2;
 
-        this.renderBackground(drawContext, mouseX, mouseY, delta);
+        drawContext.fill
+        (
+                0,
+                0,
+                this.width,
+                this.height,
+                0x88000000
+        );
 
         drawRightPanel(drawContext, leftWidth);
 
@@ -1196,26 +1206,14 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
         drawScreenChrome(drawContext, centerX, leftWidth);
 
-        var matrices = drawContext.getMatrices();
-
         if (colorPopup != null)
         {
-            matrices.push();
-            matrices.translate(0, 0, 500);
-
             colorPopup.render(drawContext, this.textRenderer, this.width, this.height, mouseX, mouseY);
-
-            matrices.pop();
         }
 
         if (entityListPopup != null)
         {
-            matrices.push();
-            matrices.translate(0, 0, 500);
-
             entityListPopup.render(drawContext, this.textRenderer, this.width, this.height, mouseX, mouseY);
-
-            matrices.pop();
         }
     }
 
@@ -1278,11 +1276,6 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
     private void drawScreenChrome(DrawContext drawContext, int centerX, int leftWidth)
     {
-        var matrices = drawContext.getMatrices();
-
-        matrices.push();
-        matrices.translate(0, 0, 300);
-
         int titleBottom = START_Y + 16;
 
         drawContext.fill
@@ -1338,8 +1331,6 @@ public class PlayerReachDisplayConfigScreen extends Screen
                 this.height,
                 0xAA000000
         );
-
-        matrices.pop();
     }
 
 
@@ -1375,7 +1366,7 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
         drawContext.drawTexture
         (
-                RenderLayer::getGuiTextured,
+                RenderPipelines.GUI_TEXTURED,
                 PREVIEW_BACKGROUND,
                 preview.x(),
                 preview.y(),
@@ -1397,8 +1388,8 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
         var matrices = drawContext.getMatrices();
 
-        matrices.push();
-        matrices.translate(preview.x(), preview.y(), 0);
+        matrices.pushMatrix();
+        matrices.translate((float)preview.x(), (float)preview.y());
 
         PlayerReachDisplayRenderer.render
         (
@@ -1410,7 +1401,7 @@ public class PlayerReachDisplayConfigScreen extends Screen
                 preview.height()
         );
 
-        matrices.pop();
+        matrices.popMatrix();
     }
 
     private PreviewLayout createPreviewLayout()
@@ -1756,7 +1747,7 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
         drawContext.drawTexture
         (
-                RenderLayer::getGuiTextured,
+                RenderPipelines.GUI_TEXTURED,
                 icon,
                 iconX,
                 iconY,
@@ -1836,7 +1827,7 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
         drawContext.drawTexture
         (
-                RenderLayer::getGuiTextured,
+                RenderPipelines.GUI_TEXTURED,
                 RESET_ICON,
                 iconX,
                 iconY,
@@ -2088,24 +2079,45 @@ public class PlayerReachDisplayConfigScreen extends Screen
     /* ----- 입력 ----- */
 
     @Override
-    public boolean charTyped(char chr, int modifiers)
+    public boolean charTyped(CharInput input)
     {
-        if (colorPopup != null)
+        String text = input.asString();
+
+        if (text.isEmpty())
         {
-            return colorPopup.charTyped(chr, modifiers);
+            return true;
         }
 
-        if (entityListPopup != null)
+        for (int i = 0; i < text.length(); i++)
         {
-            return entityListPopup.charTyped(chr, modifiers);
+            char chr = text.charAt(i);
+
+            if (colorPopup != null)
+            {
+                colorPopup.charTyped(chr, input.modifiers());
+                continue;
+            }
+
+            if (entityListPopup != null)
+            {
+                entityListPopup.charTyped(chr, input.modifiers());
+                continue;
+            }
         }
 
-        return super.charTyped(chr, modifiers);
+        if (colorPopup != null || entityListPopup != null)
+        {
+            return true;
+        }
+
+        return super.charTyped(input);
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers)
+    public boolean keyPressed(KeyInput input)
     {
+        int keyCode = input.key();
+
         if (colorPopup != null)
         {
             return colorPopup.keyPressed(keyCode);
@@ -2116,12 +2128,17 @@ public class PlayerReachDisplayConfigScreen extends Screen
             return entityListPopup.keyPressed(keyCode);
         }
 
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return super.keyPressed(input);
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button)
+    public boolean mouseClicked(Click click, boolean doubled)
     {
+        double mouseX = click.x();
+        double mouseY = click.y();
+
+        int button = click.button();
+
         if (colorPopup != null)
         {
             return colorPopup.mouseClicked(mouseX, mouseY, button);
@@ -2140,12 +2157,17 @@ public class PlayerReachDisplayConfigScreen extends Screen
             return true;
         }
 
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.mouseClicked(click, doubled);
     }
 
     @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double dx, double dy)
+    public boolean mouseDragged(Click click, double dx, double dy)
     {
+        double mouseX = click.x();
+        double mouseY = click.y();
+
+        int button = click.button();
+
         if (colorPopup != null)
         {
             return colorPopup.mouseDragged(mouseX, mouseY, button, dx, dy);
@@ -2156,12 +2178,17 @@ public class PlayerReachDisplayConfigScreen extends Screen
             return entityListPopup.mouseDragged(mouseX, mouseY, button, dx, dy);
         }
 
-        return super.mouseDragged(mouseX, mouseY, button, dx, dy);
+        return super.mouseDragged(click, dx, dy);
     }
 
     @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button)
+    public boolean mouseReleased(Click click)
     {
+        double mouseX = click.x();
+        double mouseY = click.y();
+
+        int button = click.button();
+
         if (colorPopup != null)
         {
             return colorPopup.mouseReleased(mouseX, mouseY, button);
@@ -2172,7 +2199,7 @@ public class PlayerReachDisplayConfigScreen extends Screen
             return entityListPopup.mouseReleased(mouseX, mouseY, button);
         }
 
-        return super.mouseReleased(mouseX, mouseY, button);
+        return super.mouseReleased(click);
     }
 
     @Override
@@ -2216,12 +2243,12 @@ public class PlayerReachDisplayConfigScreen extends Screen
                 Text.literal(title),
                 currentColor,
                 resetColor,
-                color ->
+                color -> setter.accept(color),
+                () ->
                 {
-                    setter.accept(color);
                     updateEnableStates();
-                },
-                () -> colorPopup = null
+                    colorPopup = null;
+                }
         );
     }
 
