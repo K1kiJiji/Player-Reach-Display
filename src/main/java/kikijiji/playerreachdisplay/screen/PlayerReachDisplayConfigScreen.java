@@ -17,7 +17,6 @@ import net.minecraft.util.Identifier;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.SliderWidget;
 import net.minecraft.client.gui.widget.ClickableWidget;
@@ -1375,14 +1374,13 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
         drawContext.drawTexture
         (
-                RenderLayer::getGuiTextured,
                 PREVIEW_BACKGROUND,
                 preview.x(),
                 preview.y(),
-                0.0f,
-                0.0f,
                 preview.width(),
                 preview.height(),
+                0.0f,
+                0.0f,
                 PREVIEW_TEXTURE_WIDTH,
                 PREVIEW_TEXTURE_HEIGHT,
                 PREVIEW_TEXTURE_WIDTH,
@@ -1754,19 +1752,14 @@ public class PlayerReachDisplayConfigScreen extends Screen
         int iconX = x + width - iconSize - 4;
         int iconY = y + (height - iconSize) / 2;
 
-        drawContext.drawTexture
+        drawIcon
         (
-                RenderLayer::getGuiTextured,
+                drawContext,
                 icon,
                 iconX,
                 iconY,
-                0,
-                0,
                 iconSize,
-                iconSize,
-                iconSize,
-                iconSize,
-                color
+                button.active ? 1.0f : 0.4f
         );
     }
 
@@ -1834,20 +1827,43 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
         int color = getWidgetTextColor(button);
 
-        drawContext.drawTexture
+        drawIcon
         (
-                RenderLayer::getGuiTextured,
+                drawContext,
                 RESET_ICON,
                 iconX,
                 iconY,
-                0.0f,
-                0.0f,
                 iconSize,
-                iconSize,
-                iconSize,
-                iconSize,
-                color
+                button.active ? 1.0f : 0.4f
         );
+    }
+
+    private void drawIcon
+    (
+            DrawContext drawContext,
+            Identifier  icon,
+            int         x,
+            int         y,
+            int         size,
+            float       alpha
+    )
+    {
+        drawContext.setShaderColor(1.0f, 1.0f, 1.0f, alpha);
+
+        drawContext.drawTexture
+        (
+                icon,
+                x,
+                y,
+                0.0f,
+                0.0f,
+                size,
+                size,
+                size,
+                size
+        );
+
+        drawContext.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
     }
 
 
