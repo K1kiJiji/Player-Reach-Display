@@ -150,7 +150,7 @@ public class EntityListPopup
                 POPUP_COLOR
         );
 
-        drawContext.drawBorder
+        drawContext.drawStrokedRectangle
         (
                 popupX,
                 popupY,
@@ -194,7 +194,7 @@ public class EntityListPopup
                 0xFF050505
         );
 
-        drawContext.drawBorder
+        drawContext.drawStrokedRectangle
         (
                 layout.listX(),
                 layout.listY(),
@@ -304,7 +304,7 @@ public class EntityListPopup
                 0xFF550000
         );
 
-        drawContext.drawBorder
+        drawContext.drawStrokedRectangle
         (
                 removeX,
                 removeY,
@@ -343,7 +343,7 @@ public class EntityListPopup
                 0xFF050505
         );
 
-        drawContext.drawBorder
+        drawContext.drawStrokedRectangle
         (
                 layout.inputX(),
                 layout.inputY(),
@@ -899,7 +899,7 @@ public class EntityListPopup
         {
             client.getSoundManager().play
             (
-                    PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.0F)
+                    PositionedSoundInstance.ui(SoundEvents.UI_BUTTON_CLICK, 1.0F)
             );
         }
     }
@@ -951,7 +951,7 @@ public class EntityListPopup
                 background
         );
 
-        drawContext.drawBorder
+        drawContext.drawStrokedRectangle
         (
                 x,
                 y,

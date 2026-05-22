@@ -52,6 +52,7 @@ public class ColorPickerPopup
     private final Runnable    onClose;
 
     private int argb;
+    private int lastNotifiedColor;
 
     private float hue;
     private float saturation;
@@ -113,6 +114,7 @@ public class ColorPickerPopup
         this.onClose       = onClose;
 
         setFromColor(initialColor);
+        lastNotifiedColor = argb;
     }
 
 
@@ -171,7 +173,7 @@ public class ColorPickerPopup
                 POPUP_COLOR
         );
 
-        drawContext.drawBorder
+        drawContext.drawStrokedRectangle
         (
                 popupX,
                 popupY,
@@ -221,7 +223,7 @@ public class ColorPickerPopup
         int cursorX = layout.svX() + (int)(saturation * (SV_WIDTH - 1));
         int cursorY = layout.svY() + (int)((1.0f - value) * (SV_HEIGHT - 1));
 
-        drawContext.drawBorder
+        drawContext.drawStrokedRectangle
         (
                 cursorX - 2,
                 cursorY - 2,
@@ -237,7 +239,7 @@ public class ColorPickerPopup
 
         int cursorX = layout.hueX() + (int)(hue * (HUE_WIDTH - 1));
 
-        drawContext.drawBorder
+        drawContext.drawStrokedRectangle
         (
                 cursorX - 2,
                 layout.hueY() - 2,
@@ -253,7 +255,7 @@ public class ColorPickerPopup
 
         int cursorX = layout.alphaX() + (int)(alpha * (ALPHA_WIDTH - 1));
 
-        drawContext.drawBorder
+        drawContext.drawStrokedRectangle
         (
                 cursorX - 2,
                 layout.alphaY() - 2,
@@ -416,7 +418,7 @@ public class ColorPickerPopup
                 0xFF050505
         );
 
-        drawContext.drawBorder
+        drawContext.drawStrokedRectangle
         (
                 inputX,
                 inputY,
@@ -568,7 +570,7 @@ public class ColorPickerPopup
             int parsed = (int)Long.parseLong(value, 16);
 
             setFromColor(parsed);
-            onChanged.accept(argb);
+            notifyColorChanged();
         }
         catch (NumberFormatException ignored)
         {
@@ -617,7 +619,7 @@ public class ColorPickerPopup
                 playClickSound();
 
                 setFromColor(resetColor);
-                onChanged.accept(argb);
+                notifyColorChanged();
             }
 
             return true;
@@ -666,7 +668,7 @@ public class ColorPickerPopup
 
             draggingSV = true;
             updateSVFromMouse(mouseX, mouseY, layout.svX(), layout.svY());
-            onChanged.accept(argb);
+            notifyColorChanged();
 
             return true;
         }
@@ -677,7 +679,7 @@ public class ColorPickerPopup
 
             draggingHue = true;
             updateHueFromMouse(mouseX, layout.hueX());
-            onChanged.accept(argb);
+            notifyColorChanged();
 
             return true;
         }
@@ -688,7 +690,7 @@ public class ColorPickerPopup
 
             draggingAlpha = true;
             updateAlphaFromMouse(mouseX, layout.alphaX());
-            onChanged.accept(argb);
+            notifyColorChanged();
 
             return true;
         }
@@ -708,7 +710,7 @@ public class ColorPickerPopup
         if (draggingSV)
         {
             updateSVFromMouse(mouseX, mouseY, layout.svX(), layout.svY());
-            onChanged.accept(argb);
+            notifyColorChanged();
 
             return true;
         }
@@ -716,7 +718,7 @@ public class ColorPickerPopup
         if (draggingHue)
         {
             updateHueFromMouse(mouseX, layout.hueX());
-            onChanged.accept(argb);
+            notifyColorChanged();
 
             return true;
         }
@@ -724,7 +726,7 @@ public class ColorPickerPopup
         if (draggingAlpha)
         {
             updateAlphaFromMouse(mouseX, layout.alphaX());
-            onChanged.accept(argb);
+            notifyColorChanged();
 
             return true;
         }
@@ -742,6 +744,18 @@ public class ColorPickerPopup
         }
 
         return true;
+    }
+
+
+    private void notifyColorChanged()
+    {
+        if (argb == lastNotifiedColor)
+        {
+            return;
+        }
+
+        lastNotifiedColor = argb;
+        onChanged.accept(argb);
     }
 
 
@@ -816,7 +830,7 @@ public class ColorPickerPopup
         {
             client.getSoundManager().play
             (
-                    PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.0F)
+                    PositionedSoundInstance.ui(SoundEvents.UI_BUTTON_CLICK, 1.0F)
             );
         }
     }
@@ -851,7 +865,7 @@ public class ColorPickerPopup
         int color  = active ? 0xFFFFFFFF : 0xFF777777;
 
         drawContext.fill(x, y, x + width, y + height, background);
-        drawContext.drawBorder(x, y, width, height, border);
+        drawContext.drawStrokedRectangle(x, y, width, height, border);
 
         drawContext.drawCenteredTextWithShadow
         (
@@ -1028,20 +1042,17 @@ public class ColorPickerPopup
         {
             float s = x / (float)(SV_WIDTH - 1);
 
-            for (int y = 0; y < SV_HEIGHT; y++)
-            {
-                float v = 1.0f - y / (float)(SV_HEIGHT - 1);
-                int rgb = hsvToRgb(hue, s, v);
+            int topRgb = hsvToRgb(hue, s, 1.0f);
 
-                drawContext.fill
-                (
-                        svX + x,
-                        svY + y,
-                        svX + x + 1,
-                        svY + y + 1,
-                        0xFF000000 | rgb
-                );
-            }
+            drawContext.fillGradient
+            (
+                    svX + x,
+                    svY,
+                    svX + x + 1,
+                    svY + SV_HEIGHT,
+                    0xFF000000 | topRgb,
+                    0xFF000000
+            );
         }
     }
 
