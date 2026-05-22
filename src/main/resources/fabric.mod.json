@@ -1,0 +1,27 @@
+{
+	"schemaVersion": 1,
+	"id": "player-reach-display",
+	"version": "${version}",
+	"name": "Player Reach Display",
+	"description": "Displays the player's latest hit distance on the HUD.",
+	"authors": ["KikiJiji"],
+	"license": "MIT",
+	"icon": "assets/player-reach-display/icon.png",
+	"environment": "client",
+	"entrypoints":
+	{
+		"client":  ["kikijiji.playerreachdisplay.PlayerReachDisplay"],
+		"modmenu": ["kikijiji.playerreachdisplay.modmenu.PlayerReachDisplayModMenu"]
+	},
+	"depends":
+	{
+		"fabricloader": ">=0.19.2",
+		"minecraft": "~1.21.4",
+		"java": ">=21",
+		"fabric-api": "*"
+	},
+	"suggests":
+	{
+		"modmenu": "*"
+	}
+}
