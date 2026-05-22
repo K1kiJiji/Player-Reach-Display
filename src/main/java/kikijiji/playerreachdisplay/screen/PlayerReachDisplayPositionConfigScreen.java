@@ -6,6 +6,8 @@ import net.minecraft.text.Text;
 
 import net.minecraft.util.Formatting;
 
+import net.minecraft.client.gui.Click;
+import net.minecraft.client.input.KeyInput;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
@@ -141,7 +143,14 @@ public class PlayerReachDisplayPositionConfigScreen extends Screen
     @Override
     public void render(DrawContext drawContext, int mouseX, int mouseY, float delta)
     {
-        this.renderBackground(drawContext, mouseX, mouseY, delta);
+        drawContext.fill
+        (
+                0,
+                0,
+                this.width,
+                this.height,
+                0x88000000
+        );
 
         super.render(drawContext, mouseX, mouseY, delta);
 
@@ -184,23 +193,28 @@ public class PlayerReachDisplayPositionConfigScreen extends Screen
     /* ----- 키 입력 ----- */
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers)
+    public boolean keyPressed(KeyInput input)
     {
         // ESC
-        if (keyCode == 256)
+        if (input.key() == 256)
         {
             MinecraftClient.getInstance().setScreen(parent);
             return true;
         }
 
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return super.keyPressed(input);
     }
 
     /* ----- 마우스 클릭 ----- */
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button)
+    public boolean mouseClicked(Click click, boolean doubled)
     {
+        double mouseX = click.x();
+        double mouseY = click.y();
+
+        int button = click.button();
+
         if (button == 0)
         {
             PlayerReachDisplayConfig previewConfig = makePreviewConfig();
@@ -225,8 +239,8 @@ public class PlayerReachDisplayPositionConfigScreen extends Screen
             {
                 dragging = true;
 
-                dragStartX = (int)mouseX;
-                dragStartY = (int)mouseY;
+                dragStartX = (int) mouseX;
+                dragStartY = (int) mouseY;
 
                 startHudX = layout.x();
                 startHudY = layout.y();
@@ -235,14 +249,19 @@ public class PlayerReachDisplayPositionConfigScreen extends Screen
             }
         }
 
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.mouseClicked(click, doubled);
     }
 
     /* ----- 마우스 드래그 ----- */
 
     @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double dx, double dy)
+    public boolean mouseDragged(Click click, double dx, double dy)
     {
+        double mouseX = click.x();
+        double mouseY = click.y();
+
+        int button = click.button();
+
         if (dragging && button == 0)
         {
             PlayerReachDisplayConfig previewConfig = makePreviewConfig();
@@ -258,8 +277,8 @@ public class PlayerReachDisplayPositionConfigScreen extends Screen
                     this.height
             );
 
-            int rawX = startHudX + (int)(mouseX - dragStartX);
-            int rawY = startHudY + (int)(mouseY - dragStartY);
+            int rawX = startHudX + (int) (mouseX - dragStartX);
+            int rawY = startHudY + (int) (mouseY - dragStartY);
 
             int maxX = Math.max
             (
@@ -282,19 +301,19 @@ public class PlayerReachDisplayPositionConfigScreen extends Screen
             return true;
         }
 
-        return super.mouseDragged(mouseX, mouseY, button, dx, dy);
+        return super.mouseDragged(click, dx, dy);
     }
 
     /* ----- 마우스 릴리즈 ----- */
 
     @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button)
+    public boolean mouseReleased(Click click)
     {
-        if (button == 0)
+        if (click.button() == 0)
         {
             dragging = false;
         }
 
-        return super.mouseReleased(mouseX, mouseY, button);
+        return super.mouseReleased(click);
     }
 }
