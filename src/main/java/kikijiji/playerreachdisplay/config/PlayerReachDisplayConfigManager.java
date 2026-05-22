@@ -137,7 +137,7 @@ public class PlayerReachDisplayConfigManager
             config.distanceBands.removeLast();
         }
 
-        for (PlayerReachDisplayConfig.DistanceColorBand band : config.distanceBands)
+        for (DistanceColorBand band : config.distanceBands)
         {
             band.fromDistance = Math.clamp
             (
