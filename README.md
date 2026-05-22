@@ -75,15 +75,11 @@ Available options include:
 
 Requires:
 
-- **Minecraft Java Edition 1.21.4**
-- **Java 21**
 - **Fabric Loader**
 - **Fabric API**
 
 Optional:
 
 - **Mod Menu** — recommended for opening the configuration screen easily
-
-Place the mod `.jar` file into your Minecraft `mods` folder.
 
 ---
