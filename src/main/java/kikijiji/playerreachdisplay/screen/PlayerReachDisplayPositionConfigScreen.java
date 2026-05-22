@@ -141,7 +141,14 @@ public class PlayerReachDisplayPositionConfigScreen extends Screen
     @Override
     public void render(DrawContext drawContext, int mouseX, int mouseY, float delta)
     {
-        this.renderBackground(drawContext, mouseX, mouseY, delta);
+        drawContext.fill
+        (
+                0,
+                0,
+                this.width,
+                this.height,
+                0x88000000
+        );
 
         super.render(drawContext, mouseX, mouseY, delta);
 

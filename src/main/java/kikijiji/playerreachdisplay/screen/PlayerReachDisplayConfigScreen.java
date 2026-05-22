@@ -17,7 +17,7 @@ import net.minecraft.util.Identifier;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.SliderWidget;
 import net.minecraft.client.gui.widget.ClickableWidget;
@@ -1184,7 +1184,14 @@ public class PlayerReachDisplayConfigScreen extends Screen
         int leftWidth   = centerX + this.width / 6;
         int leftCenterX = leftWidth / 2;
 
-        this.renderBackground(drawContext, mouseX, mouseY, delta);
+        drawContext.fill
+        (
+                0,
+                0,
+                this.width,
+                this.height,
+                0x88000000
+        );
 
         drawRightPanel(drawContext, leftWidth);
 
@@ -1196,26 +1203,14 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
         drawScreenChrome(drawContext, centerX, leftWidth);
 
-        var matrices = drawContext.getMatrices();
-
         if (colorPopup != null)
         {
-            matrices.push();
-            matrices.translate(0, 0, 500);
-
             colorPopup.render(drawContext, this.textRenderer, this.width, this.height, mouseX, mouseY);
-
-            matrices.pop();
         }
 
         if (entityListPopup != null)
         {
-            matrices.push();
-            matrices.translate(0, 0, 500);
-
             entityListPopup.render(drawContext, this.textRenderer, this.width, this.height, mouseX, mouseY);
-
-            matrices.pop();
         }
     }
 
@@ -1278,11 +1273,6 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
     private void drawScreenChrome(DrawContext drawContext, int centerX, int leftWidth)
     {
-        var matrices = drawContext.getMatrices();
-
-        matrices.push();
-        matrices.translate(0, 0, 300);
-
         int titleBottom = START_Y + 16;
 
         drawContext.fill
@@ -1338,8 +1328,6 @@ public class PlayerReachDisplayConfigScreen extends Screen
                 this.height,
                 0xAA000000
         );
-
-        matrices.pop();
     }
 
 
@@ -1375,7 +1363,7 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
         drawContext.drawTexture
         (
-                RenderLayer::getGuiTextured,
+                RenderPipelines.GUI_TEXTURED,
                 PREVIEW_BACKGROUND,
                 preview.x(),
                 preview.y(),
@@ -1397,8 +1385,8 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
         var matrices = drawContext.getMatrices();
 
-        matrices.push();
-        matrices.translate(preview.x(), preview.y(), 0);
+        matrices.pushMatrix();
+        matrices.translate((float)preview.x(), (float)preview.y());
 
         PlayerReachDisplayRenderer.render
         (
@@ -1410,7 +1398,7 @@ public class PlayerReachDisplayConfigScreen extends Screen
                 preview.height()
         );
 
-        matrices.pop();
+        matrices.popMatrix();
     }
 
     private PreviewLayout createPreviewLayout()
@@ -1756,7 +1744,7 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
         drawContext.drawTexture
         (
-                RenderLayer::getGuiTextured,
+                RenderPipelines.GUI_TEXTURED,
                 icon,
                 iconX,
                 iconY,
@@ -1836,7 +1824,7 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
         drawContext.drawTexture
         (
-                RenderLayer::getGuiTextured,
+                RenderPipelines.GUI_TEXTURED,
                 RESET_ICON,
                 iconX,
                 iconY,
@@ -2216,12 +2204,12 @@ public class PlayerReachDisplayConfigScreen extends Screen
                 Text.literal(title),
                 currentColor,
                 resetColor,
-                color ->
+                color -> setter.accept(color),
+                () ->
                 {
-                    setter.accept(color);
                     updateEnableStates();
-                },
-                () -> colorPopup = null
+                    colorPopup = null;
+                }
         );
     }
 
