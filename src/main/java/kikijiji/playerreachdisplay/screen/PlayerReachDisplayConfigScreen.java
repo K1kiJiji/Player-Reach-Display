@@ -2312,6 +2312,7 @@ public class PlayerReachDisplayConfigScreen extends Screen
         return result.isEmpty() ? "..." : result + "...";
     }
 
+
     private int safeSize(List<String> list)
     {
         return list == null ? 0 : list.size();
