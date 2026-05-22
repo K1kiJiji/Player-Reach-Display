@@ -42,7 +42,7 @@ public class EntityListPopup
 
 
     private final Text                   title;
-    private final List<String>           originalEntries;
+    private final List<String> originalEntries;
     private final List<String>           resetEntries;
     private final List<String>           workingEntries = new ArrayList<>();
     private final Consumer<List<String>> onDone;
