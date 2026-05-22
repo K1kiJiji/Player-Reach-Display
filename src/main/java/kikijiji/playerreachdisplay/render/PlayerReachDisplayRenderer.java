@@ -4,8 +4,10 @@ package kikijiji.playerreachdisplay.render;
 
 import java.text.DecimalFormat;
 
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.font.TextRenderer;
+import org.joml.Matrix3x2fStack;
+
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 
 import kikijiji.playerreachdisplay.config.PlayerReachDisplayConfig;
 import kikijiji.playerreachdisplay.config.PlayerReachDisplayConfig.DistanceColorBand;
@@ -61,12 +63,12 @@ public final class PlayerReachDisplayRenderer
 
     public static void render
     (
-            DrawContext              drawContext,
-            TextRenderer             textRenderer,
+            GuiGraphicsExtractor   graphics,
+            Font                   font,
             PlayerReachDisplayConfig config,
-            double                   distance,
-            int                      screenWidth,
-            int                      screenHeight
+            double                 distance,
+            int                    screenWidth,
+            int                    screenHeight
     )
     {
         if (config == null || !config.showReach)
@@ -76,18 +78,28 @@ public final class PlayerReachDisplayRenderer
 
         String text = formatDistance(distance, config.displayMode);
 
-        HudLayout layout = measure(textRenderer, config, text, screenWidth, screenHeight);
+        HudLayout layout = measure(font, config, text, screenWidth, screenHeight);
         HudColors colors = resolveColors(config, distance);
 
-        var matrices = drawContext.getMatrices();
+        Matrix3x2fStack matrices = graphics.pose();
 
-        matrices.push();
-        matrices.translate(layout.x(), layout.y(), 0);
-        matrices.scale(layout.scale(), layout.scale(), 1.0f);
+        matrices.pushMatrix();
+
+        matrices.translate
+        (
+                (float)layout.x(),
+                (float)layout.y()
+        );
+
+        matrices.scale
+        (
+                layout.scale(),
+                layout.scale()
+        );
 
         if (config.showBackground)
         {
-            drawContext.fill
+            graphics.fill
             (
                     0,
                     0,
@@ -96,11 +108,12 @@ public final class PlayerReachDisplayRenderer
                     colors.backgroundColor()
             );
         }
+
         if (config.showShadow)
         {
-            drawContext.drawText
+            graphics.text
             (
-                    textRenderer,
+                    font,
                     text,
                     layout.padding() + 1,
                     layout.padding() + 1,
@@ -108,9 +121,10 @@ public final class PlayerReachDisplayRenderer
                     false
             );
         }
-        drawContext.drawText
+
+        graphics.text
         (
-                textRenderer,
+                font,
                 text,
                 layout.padding(),
                 layout.padding(),
@@ -118,8 +132,9 @@ public final class PlayerReachDisplayRenderer
                 false
         );
 
-        matrices.pop();
+        matrices.popMatrix();
     }
+
 
 
     /* ----- 표시 포맷 ----- */
@@ -137,15 +152,16 @@ public final class PlayerReachDisplayRenderer
     }
 
 
+
     /* ----- 측정 ----- */
 
     public static HudLayout measure
     (
-            TextRenderer             textRenderer,
+            Font                   font,
             PlayerReachDisplayConfig config,
-            String                   text,
-            int                      screenWidth,
-            int                      screenHeight
+            String                 text,
+            int                    screenWidth,
+            int                    screenHeight
     )
     {
         float scale = Math.max(MIN_SCALE, config.scale / 100.0f);
@@ -154,8 +170,8 @@ public final class PlayerReachDisplayRenderer
 
         int shadowExtra = config.showShadow ? 1 : 0;
 
-        int rawWidth  = textRenderer.getWidth(text) + padding * 2 + shadowExtra;
-        int rawHeight = textRenderer.fontHeight + padding * 2 + shadowExtra;
+        int rawWidth  = font.width(text) + padding * 2 + shadowExtra;
+        int rawHeight = font.lineHeight + padding * 2 + shadowExtra;
 
         int scaledWidth  = (int)Math.ceil(rawWidth * scale);
         int scaledHeight = (int)Math.ceil(rawHeight * scale);
@@ -163,8 +179,20 @@ public final class PlayerReachDisplayRenderer
         int x = resolveX(config, screenWidth, scaledWidth);
         int y = resolveY(config, screenHeight, scaledHeight);
 
-        return new HudLayout(x, y, padding, rawWidth, rawHeight, scaledWidth, scaledHeight, scale);
+        return new HudLayout
+        (
+                x,
+                y,
+                padding,
+                rawWidth,
+                rawHeight,
+                scaledWidth,
+                scaledHeight,
+                scale
+        );
     }
+
+
 
     /* ----- 측정 헬퍼 ----- */
 
@@ -198,7 +226,6 @@ public final class PlayerReachDisplayRenderer
         );
     }
 
-
     public static double ratioFromPixel(int pixel, int screenSize, int hudSize)
     {
         int available = Math.max(1, screenSize - hudSize - HUD_MARGIN * 2);
@@ -212,7 +239,6 @@ public final class PlayerReachDisplayRenderer
 
         return HUD_MARGIN + (int)Math.round(clamp01(ratio) * available);
     }
-
 
     private static int clamp(int value, int min, int max)
     {
@@ -256,6 +282,8 @@ public final class PlayerReachDisplayRenderer
 
         return colors;
     }
+
+
 
     /* ----- 색상 결정 헬퍼 ----- */
 

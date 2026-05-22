@@ -9,18 +9,22 @@ import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 import java.util.function.DoubleConsumer;
 
-import net.minecraft.text.Text;
+import net.minecraft.ChatFormatting;
 
-import net.minecraft.util.Formatting;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.AbstractSliderButton;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.renderer.RenderPipelines;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.render.RenderLayer;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.gui.widget.SliderWidget;
-import net.minecraft.client.gui.widget.ClickableWidget;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 
 import kikijiji.playerreachdisplay.PlayerReachDisplay;
 import kikijiji.playerreachdisplay.config.PlayerReachDisplayConfig;
@@ -32,10 +36,10 @@ import kikijiji.playerreachdisplay.config.PlayerReachDisplayConfig.DistanceColor
 
 public class PlayerReachDisplayConfigScreen extends Screen
 {
-    private static final Identifier TOGGLE_ON_ICON     = Identifier.of(PlayerReachDisplay.MOD_ID, "textures/gui/toggle_on.png");
-    private static final Identifier TOGGLE_OFF_ICON    = Identifier.of(PlayerReachDisplay.MOD_ID, "textures/gui/toggle_off.png");
-    private static final Identifier RESET_ICON         = Identifier.of(PlayerReachDisplay.MOD_ID, "textures/gui/reset.png");
-    private static final Identifier PREVIEW_BACKGROUND = Identifier.of(PlayerReachDisplay.MOD_ID, "textures/gui/preview_background.png");
+    private static final Identifier TOGGLE_ON_ICON     = Identifier.fromNamespaceAndPath(PlayerReachDisplay.MOD_ID, "textures/gui/toggle_on.png");
+    private static final Identifier TOGGLE_OFF_ICON    = Identifier.fromNamespaceAndPath(PlayerReachDisplay.MOD_ID, "textures/gui/toggle_off.png");
+    private static final Identifier RESET_ICON         = Identifier.fromNamespaceAndPath(PlayerReachDisplay.MOD_ID, "textures/gui/reset.png");
+    private static final Identifier PREVIEW_BACKGROUND = Identifier.fromNamespaceAndPath(PlayerReachDisplay.MOD_ID, "textures/gui/preview_background.png");
 
     private static final int PREVIEW_TEXTURE_WIDTH  = 385;
     private static final int PREVIEW_TEXTURE_HEIGHT = 215;
@@ -52,83 +56,83 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
 
 
-    private final List<ClickableWidget> leftControls     = new ArrayList<>();
-    private final List<Integer>         leftControlBaseY = new ArrayList<>();
+    private final List<AbstractWidget> leftControls     = new ArrayList<>();
+    private final List<Integer>        leftControlBaseY = new ArrayList<>();
 
     private final List<SectionHeader> sectionHeaders = new ArrayList<>();
 
 
 
-    private ButtonWidget textToggle;
-    private ButtonWidget textReset;
+    private Button textToggle;
+    private Button textReset;
 
-    private ButtonWidget shadowToggle;
-    private ButtonWidget shadowReset;
+    private Button shadowToggle;
+    private Button shadowReset;
 
-    private ButtonWidget backgroundToggle;
-    private ButtonWidget backgroundReset;
+    private Button backgroundToggle;
+    private Button backgroundReset;
 
 
 
     private ConfigSliderWidget scaleSlider;
-    private ButtonWidget       scaleReset;
+    private Button             scaleReset;
 
-    private ButtonWidget positionToggle;
-
-
-
-    private ButtonWidget textColorButton;
-    private ButtonWidget textColorReset;
-
-    private ButtonWidget shadowColorButton;
-    private ButtonWidget shadowColorReset;
-
-    private ButtonWidget backgroundColorButton;
-    private ButtonWidget backgroundColorReset;
+    private Button positionToggle;
 
 
 
-    private ButtonWidget keepLastDistanceToggle;
-    private ButtonWidget keepLastDistanceReset;
+    private Button textColorButton;
+    private Button textColorReset;
+
+    private Button shadowColorButton;
+    private Button shadowColorReset;
+
+    private Button backgroundColorButton;
+    private Button backgroundColorReset;
+
+
+
+    private Button keepLastDistanceToggle;
+    private Button keepLastDistanceReset;
 
     private ConfigSliderWidget resetSecondsSlider;
-    private ButtonWidget       resetSecondsReset;
+    private Button             resetSecondsReset;
 
 
 
-    private ButtonWidget displayModeButton;
-    private ButtonWidget displayModeReset;
+    private Button displayModeButton;
+    private Button displayModeReset;
 
 
 
-    private ButtonWidget entityFilterToggle;
-    private ButtonWidget entityFilterToggleReset;
+    private Button entityFilterToggle;
+    private Button entityFilterToggleReset;
 
-    private ButtonWidget entityFilterModeButton;
-    private ButtonWidget entityFilterModeReset;
+    private Button entityFilterModeButton;
+    private Button entityFilterModeReset;
 
-    private ButtonWidget whitelistButton;
-    private ButtonWidget whitelistReset;
+    private Button whitelistButton;
+    private Button whitelistReset;
 
-    private ButtonWidget blacklistButton;
-    private ButtonWidget blacklistReset;
+    private Button blacklistButton;
+    private Button blacklistReset;
 
 
 
-    private ButtonWidget distanceColorToggle;
-    private ButtonWidget distanceColorReset;
+    private Button distanceColorToggle;
+    private Button distanceColorReset;
 
-    private ButtonWidget distanceBandAddButton;
-    private ButtonWidget distanceBandRemoveButton;
+    private Button distanceBandAddButton;
+    private Button distanceBandRemoveButton;
 
     private final List<ConfigSliderWidget> bandFromSliders                 = new ArrayList<>();
-    private final List<ButtonWidget>       bandFromResetButtons            = new ArrayList<>();
-    private final List<ButtonWidget>       bandTextColorButtons            = new ArrayList<>();
-    private final List<ButtonWidget>       bandTextColorResetButtons       = new ArrayList<>();
-    private final List<ButtonWidget>       bandShadowColorButtons          = new ArrayList<>();
-    private final List<ButtonWidget>       bandShadowColorResetButtons     = new ArrayList<>();
-    private final List<ButtonWidget>       bandBackgroundColorButtons      = new ArrayList<>();
-    private final List<ButtonWidget>       bandBackgroundColorResetButtons = new ArrayList<>();
+    private final List<Button>             bandFromResetButtons            = new ArrayList<>();
+    private final List<Button>             bandTextColorButtons            = new ArrayList<>();
+    private final List<Button>             bandTextColorResetButtons       = new ArrayList<>();
+    private final List<Button>             bandShadowColorButtons          = new ArrayList<>();
+    private final List<Button>             bandShadowColorResetButtons     = new ArrayList<>();
+    private final List<Button>             bandBackgroundColorButtons      = new ArrayList<>();
+    private final List<Button>             bandBackgroundColorResetButtons = new ArrayList<>();
 
 
 
@@ -153,7 +157,7 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
 
 
-    private class ConfigSliderWidget extends SliderWidget
+    private class ConfigSliderWidget extends AbstractSliderButton
     {
         private final String         label;
         private final double         min;
@@ -183,7 +187,7 @@ public class PlayerReachDisplayConfigScreen extends Screen
                     y,
                     width,
                     height,
-                    Text.empty(),
+                    Component.empty(),
                     toSliderValue(current, min, max)
             );
 
@@ -214,7 +218,7 @@ public class PlayerReachDisplayConfigScreen extends Screen
                 valueText = String.format(Locale.ROOT, "%." + decimals + "f", actualValue);
             }
 
-            this.setMessage(Text.literal(label + ": " + valueText));
+            this.setMessage(Component.literal(label + ": " + valueText));
         }
 
         @Override
@@ -240,8 +244,6 @@ public class PlayerReachDisplayConfigScreen extends Screen
             return actualValue;
         }
 
-
-
         private void setActualValue(double actualValue)
         {
             this.value = toSliderValue(actualValue, min, max);
@@ -255,11 +257,13 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
     public PlayerReachDisplayConfigScreen(Screen parent)
     {
-        super(Text.literal("Player Reach Display Config").formatted(Formatting.BOLD));
+        super(Component.literal("Player Reach Display Config").withStyle(ChatFormatting.BOLD));
 
         this.parent = parent;
 
-        this.workingConfig = PlayerReachDisplay.CONFIG == null ? new PlayerReachDisplayConfig() : PlayerReachDisplay.CONFIG.copy();
+        this.workingConfig = PlayerReachDisplay.CONFIG == null
+                ? new PlayerReachDisplayConfig()
+                : PlayerReachDisplay.CONFIG.copy();
     }
 
 
@@ -269,7 +273,7 @@ public class PlayerReachDisplayConfigScreen extends Screen
     @Override
     protected void init()
     {
-        this.clearChildren();
+        this.clearWidgets();
 
         sectionHeaders.clear();
 
@@ -326,10 +330,10 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
         addSectionHeader("Appearance", y - 20);
 
-        textToggle = addLeftButton(ButtonWidget.builder
+        textToggle = addLeftButton(Button.builder
         (
-                Text.literal(""),
-                buttonWidget ->
+                Component.literal(""),
+                button ->
                 {
                     workingConfig.showReach = !workingConfig.showReach;
                     updateEnableStates();
@@ -337,10 +341,10 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
         ), x - 10, y, buttonWidth, buttonHeight);
 
-        textReset = addLeftButton(ButtonWidget.builder
+        textReset = addLeftButton(Button.builder
         (
-                Text.literal(""),
-                buttonWidget ->
+                Component.literal(""),
+                button ->
                 {
                     workingConfig.showReach = defaultConfig.showReach;
                     workingConfig.textColor = defaultConfig.textColor;
@@ -352,10 +356,10 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
         y += 25;
 
-        shadowToggle = addLeftButton(ButtonWidget.builder
+        shadowToggle = addLeftButton(Button.builder
         (
-                Text.literal(""),
-                buttonWidget ->
+                Component.literal(""),
+                button ->
                 {
                     workingConfig.showShadow = !workingConfig.showShadow;
                     updateEnableStates();
@@ -363,10 +367,10 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
         ), x - 10, y, buttonWidth, buttonHeight);
 
-        shadowReset = addLeftButton(ButtonWidget.builder
+        shadowReset = addLeftButton(Button.builder
         (
-                Text.literal(""),
-                buttonWidget ->
+                Component.literal(""),
+                button ->
                 {
                     workingConfig.showShadow = defaultConfig.showShadow;
                     workingConfig.shadowColor = defaultConfig.shadowColor;
@@ -378,10 +382,10 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
         y += 25;
 
-        backgroundToggle = addLeftButton(ButtonWidget.builder
+        backgroundToggle = addLeftButton(Button.builder
         (
-                Text.literal(""),
-                buttonWidget ->
+                Component.literal(""),
+                button ->
                 {
                     workingConfig.showBackground = !workingConfig.showBackground;
                     updateEnableStates();
@@ -389,10 +393,10 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
         ), x - 10, y, buttonWidth, buttonHeight);
 
-        backgroundReset = addLeftButton(ButtonWidget.builder
+        backgroundReset = addLeftButton(Button.builder
         (
-                Text.literal(""),
-                buttonWidget ->
+                Component.literal(""),
+                button ->
                 {
                     workingConfig.showBackground = defaultConfig.showBackground;
                     workingConfig.backgroundColor = defaultConfig.backgroundColor;
@@ -424,10 +428,10 @@ public class PlayerReachDisplayConfigScreen extends Screen
                 buttonHeight
         );
 
-        scaleReset = addLeftButton(ButtonWidget.builder
+        scaleReset = addLeftButton(Button.builder
         (
-                Text.literal(""),
-                buttonWidget ->
+                Component.literal(""),
+                button ->
                 {
                     workingConfig.scale = defaultConfig.scale;
                     this.init();
@@ -437,13 +441,13 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
         y += 25;
 
-        positionToggle = addLeftButton(ButtonWidget.builder
+        positionToggle = addLeftButton(Button.builder
         (
-                Text.literal(""),
-                buttonWidget -> MinecraftClient.getInstance().setScreen
-                        (
-                                new PlayerReachDisplayPositionConfigScreen(this, this.workingConfig)
-                        )
+                Component.literal(""),
+                button -> Minecraft.getInstance().setScreen
+                (
+                        new PlayerReachDisplayPositionConfigScreen(this, this.workingConfig)
+                )
 
         ), x - 10, y, fullButtonWidth, buttonHeight);
 
@@ -455,23 +459,23 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
         addSectionHeader("Color", y - 15);
 
-        textColorButton = addLeftButton(ButtonWidget.builder
+        textColorButton = addLeftButton(Button.builder
         (
-                Text.literal(""),
-                buttonWidget -> openColorPopup
-                        (
-                                "Text Color",
-                                workingConfig.textColor,
-                                defaultConfig.textColor,
-                                color -> workingConfig.textColor = color
-                        )
+                Component.literal(""),
+                button -> openColorPopup
+                (
+                        "Text Color",
+                        workingConfig.textColor,
+                        defaultConfig.textColor,
+                        color -> workingConfig.textColor = color
+                )
 
         ), x - 10, y, buttonWidth, buttonHeight);
 
-        textColorReset = addLeftButton(ButtonWidget.builder
+        textColorReset = addLeftButton(Button.builder
         (
-                Text.literal(""),
-                buttonWidget ->
+                Component.literal(""),
+                button ->
                 {
                     workingConfig.textColor = defaultConfig.textColor;
                     updateEnableStates();
@@ -481,23 +485,23 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
         y += 25;
 
-        shadowColorButton = addLeftButton(ButtonWidget.builder
+        shadowColorButton = addLeftButton(Button.builder
         (
-                Text.literal(""),
-                buttonWidget -> openColorPopup
-                        (
-                                "Shadow Color",
-                                workingConfig.shadowColor,
-                                defaultConfig.shadowColor,
-                                color -> workingConfig.shadowColor = color
-                        )
+                Component.literal(""),
+                button -> openColorPopup
+                (
+                        "Shadow Color",
+                        workingConfig.shadowColor,
+                        defaultConfig.shadowColor,
+                        color -> workingConfig.shadowColor = color
+                )
 
         ), x - 10, y, buttonWidth, buttonHeight);
 
-        shadowColorReset = addLeftButton(ButtonWidget.builder
+        shadowColorReset = addLeftButton(Button.builder
         (
-                Text.literal(""),
-                buttonWidget ->
+                Component.literal(""),
+                button ->
                 {
                     workingConfig.shadowColor = defaultConfig.shadowColor;
                     updateEnableStates();
@@ -507,23 +511,23 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
         y += 25;
 
-        backgroundColorButton = addLeftButton(ButtonWidget.builder
+        backgroundColorButton = addLeftButton(Button.builder
         (
-                Text.literal(""),
-                buttonWidget -> openColorPopup
-                        (
-                                "Background Color",
-                                workingConfig.backgroundColor,
-                                defaultConfig.backgroundColor,
-                                color -> workingConfig.backgroundColor = color
-                        )
+                Component.literal(""),
+                button -> openColorPopup
+                (
+                        "Background Color",
+                        workingConfig.backgroundColor,
+                        defaultConfig.backgroundColor,
+                        color -> workingConfig.backgroundColor = color
+                )
 
         ), x - 10, y, buttonWidth, buttonHeight);
 
-        backgroundColorReset = addLeftButton(ButtonWidget.builder
+        backgroundColorReset = addLeftButton(Button.builder
         (
-                Text.literal(""),
-                buttonWidget ->
+                Component.literal(""),
+                button ->
                 {
                     workingConfig.backgroundColor = defaultConfig.backgroundColor;
                     updateEnableStates();
@@ -535,14 +539,14 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
 
 
-        /* ----- Keep Last Distance ----- */
+        /* ----- Distance Reset ----- */
 
-        addSectionHeader("Keep Last Distance", y - 15);
+        addSectionHeader("Distance Reset", y - 15);
 
-        keepLastDistanceToggle = addLeftButton(ButtonWidget.builder
+        keepLastDistanceToggle = addLeftButton(Button.builder
         (
-                Text.literal(""),
-                buttonWidget ->
+                Component.literal(""),
+                button ->
                 {
                     workingConfig.keepLastHitDistance = !workingConfig.keepLastHitDistance;
                     updateEnableStates();
@@ -550,10 +554,10 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
         ), x - 10, y, buttonWidth, buttonHeight);
 
-        keepLastDistanceReset = addLeftButton(ButtonWidget.builder
+        keepLastDistanceReset = addLeftButton(Button.builder
         (
-                Text.literal(""),
-                buttonWidget ->
+                Component.literal(""),
+                button ->
                 {
                     workingConfig.keepLastHitDistance = defaultConfig.keepLastHitDistance;
                     updateEnableStates();
@@ -577,10 +581,10 @@ public class PlayerReachDisplayConfigScreen extends Screen
                 buttonHeight
         );
 
-        resetSecondsReset = addLeftButton(ButtonWidget.builder
+        resetSecondsReset = addLeftButton(Button.builder
         (
-                Text.literal(""),
-                buttonWidget ->
+                Component.literal(""),
+                button ->
                 {
                     workingConfig.resetAfterSeconds = defaultConfig.resetAfterSeconds;
                     this.init();
@@ -596,10 +600,10 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
         addSectionHeader("Display Mode", y - 15);
 
-        displayModeButton = addLeftButton(ButtonWidget.builder
+        displayModeButton = addLeftButton(Button.builder
         (
-                Text.literal(""),
-                buttonWidget ->
+                Component.literal(""),
+                button ->
                 {
                     switch (workingConfig.displayMode)
                     {
@@ -613,10 +617,10 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
         ), x - 10, y, buttonWidth, buttonHeight);
 
-        displayModeReset = addLeftButton(ButtonWidget.builder
+        displayModeReset = addLeftButton(Button.builder
         (
-                Text.literal(""),
-                buttonWidget ->
+                Component.literal(""),
+                button ->
                 {
                     workingConfig.displayMode = defaultConfig.displayMode;
                     updateEnableStates();
@@ -632,10 +636,10 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
         addSectionHeader("Entity Filter", y - 20);
 
-        entityFilterToggle = addLeftButton(ButtonWidget.builder
+        entityFilterToggle = addLeftButton(Button.builder
         (
-                Text.literal(""),
-                buttonWidget ->
+                Component.literal(""),
+                button ->
                 {
                     workingConfig.enableEntityFilter = !workingConfig.enableEntityFilter;
                     updateEnableStates();
@@ -643,10 +647,10 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
         ), x - 10, y, buttonWidth, buttonHeight);
 
-        entityFilterToggleReset = addLeftButton(ButtonWidget.builder
+        entityFilterToggleReset = addLeftButton(Button.builder
         (
-                Text.literal(""),
-                buttonWidget ->
+                Component.literal(""),
+                button ->
                 {
                     workingConfig.enableEntityFilter = defaultConfig.enableEntityFilter;
                     updateEnableStates();
@@ -656,10 +660,10 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
         y += 25;
 
-        entityFilterModeButton = addLeftButton(ButtonWidget.builder
+        entityFilterModeButton = addLeftButton(Button.builder
         (
-                Text.literal(""),
-                buttonWidget ->
+                Component.literal(""),
+                button ->
                 {
                     workingConfig.useWhitelist = !workingConfig.useWhitelist;
                     updateEnableStates();
@@ -667,10 +671,10 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
         ), x - 10, y, buttonWidth, buttonHeight);
 
-        entityFilterModeReset = addLeftButton(ButtonWidget.builder
+        entityFilterModeReset = addLeftButton(Button.builder
         (
-                Text.literal(""),
-                buttonWidget ->
+                Component.literal(""),
+                button ->
                 {
                     workingConfig.useWhitelist = defaultConfig.useWhitelist;
                     updateEnableStates();
@@ -680,23 +684,23 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
         y += 25;
 
-        whitelistButton = addLeftButton(ButtonWidget.builder
+        whitelistButton = addLeftButton(Button.builder
         (
-                Text.literal(""),
-                buttonWidget -> openEntityListPopup
-                        (
-                                "Edit Whitelist",
-                                workingConfig.whitelist,
-                                defaultConfig.whitelist,
-                                result -> workingConfig.whitelist = new ArrayList<>(result)
-                        )
+                Component.literal(""),
+                button -> openEntityListPopup
+                (
+                        "Edit Whitelist",
+                        workingConfig.whitelist,
+                        defaultConfig.whitelist,
+                        result -> workingConfig.whitelist = new ArrayList<>(result)
+                )
 
         ), x - 10, y, buttonWidth, buttonHeight);
 
-        whitelistReset = addLeftButton(ButtonWidget.builder
+        whitelistReset = addLeftButton(Button.builder
         (
-                Text.literal(""),
-                buttonWidget ->
+                Component.literal(""),
+                button ->
                 {
                     workingConfig.whitelist = new ArrayList<>(defaultConfig.whitelist);
                     updateEnableStates();
@@ -706,23 +710,23 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
         y += 25;
 
-        blacklistButton = addLeftButton(ButtonWidget.builder
+        blacklistButton = addLeftButton(Button.builder
         (
-                Text.literal(""),
-                buttonWidget -> openEntityListPopup
-                        (
-                                "Edit Blacklist",
-                                workingConfig.blacklist,
-                                defaultConfig.blacklist,
-                                result -> workingConfig.blacklist = new ArrayList<>(result)
-                        )
+                Component.literal(""),
+                button -> openEntityListPopup
+                (
+                        "Edit Blacklist",
+                        workingConfig.blacklist,
+                        defaultConfig.blacklist,
+                        result -> workingConfig.blacklist = new ArrayList<>(result)
+                )
 
         ), x - 10, y, buttonWidth, buttonHeight);
 
-        blacklistReset = addLeftButton(ButtonWidget.builder
+        blacklistReset = addLeftButton(Button.builder
         (
-                Text.literal(""),
-                buttonWidget ->
+                Component.literal(""),
+                button ->
                 {
                     workingConfig.blacklist = new ArrayList<>(defaultConfig.blacklist);
                     updateEnableStates();
@@ -738,10 +742,10 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
         addSectionHeader("Distance Color", y - 20);
 
-        distanceColorToggle = addLeftButton(ButtonWidget.builder
+        distanceColorToggle = addLeftButton(Button.builder
         (
-                Text.literal(""),
-                buttonWidget ->
+                Component.literal(""),
+                button ->
                 {
                     workingConfig.enableDistanceColor = !workingConfig.enableDistanceColor;
                     updateEnableStates();
@@ -749,10 +753,10 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
         ), x - 10, y, buttonWidth, buttonHeight);
 
-        distanceColorReset = addLeftButton(ButtonWidget.builder
+        distanceColorReset = addLeftButton(Button.builder
         (
-                Text.literal(""),
-                buttonWidget ->
+                Component.literal(""),
+                button ->
                 {
                     workingConfig.enableDistanceColor = defaultConfig.enableDistanceColor;
                     updateEnableStates();
@@ -765,17 +769,17 @@ public class PlayerReachDisplayConfigScreen extends Screen
         int bandButtonGap = 4;
         int bandButtonWidth = (fullButtonWidth - bandButtonGap) / 2;
 
-        distanceBandRemoveButton = addLeftButton(ButtonWidget.builder
+        distanceBandRemoveButton = addLeftButton(Button.builder
         (
-                Text.literal("Remove Band"),
-                buttonWidget -> removeDistanceBand()
+                Component.literal("Remove Band"),
+                button -> removeDistanceBand()
 
         ), x - 10, y, bandButtonWidth, buttonHeight);
 
-        distanceBandAddButton = addLeftButton(ButtonWidget.builder
+        distanceBandAddButton = addLeftButton(Button.builder
         (
-                Text.literal("Add Band"),
-                buttonWidget -> addDistanceBand()
+                Component.literal("Add Band"),
+                button -> addDistanceBand()
 
         ), x - 10 + bandButtonWidth + bandButtonGap, y, bandButtonWidth, buttonHeight);
 
@@ -788,7 +792,6 @@ public class PlayerReachDisplayConfigScreen extends Screen
         for (int i = 0; i < workingConfig.distanceBands.size(); i++)
         {
             final int bandIndex = i;
-
             DistanceColorBand band = workingConfig.distanceBands.get(bandIndex);
 
             if (bandIndex > 0)
@@ -809,10 +812,10 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
                 bandFromSliders.add(fromSlider);
 
-                ButtonWidget fromReset = addLeftButton(ButtonWidget.builder
+                Button fromReset = addLeftButton(Button.builder
                 (
-                        Text.literal(""),
-                        buttonWidget -> resetBandFromDistance(bandIndex)
+                        Component.literal(""),
+                        button -> resetBandFromDistance(bandIndex)
 
                 ), bandResetX, y, 20, buttonHeight);
 
@@ -821,25 +824,25 @@ public class PlayerReachDisplayConfigScreen extends Screen
                 y += 25;
             }
 
-            ButtonWidget textBandColor = addLeftButton(ButtonWidget.builder
+            Button textBandColor = addLeftButton(Button.builder
             (
-                    Text.literal(""),
-                    buttonWidget -> openColorPopup
-                            (
-                                    "Band " + (bandIndex + 1) + " Main Color",
-                                    workingConfig.distanceBands.get(bandIndex).textColor,
-                                    defaultBand(bandIndex).textColor,
-                                    color -> workingConfig.distanceBands.get(bandIndex).textColor = color
-                            )
+                    Component.literal(""),
+                    button -> openColorPopup
+                    (
+                            "Band " + (bandIndex + 1) + " Main Color",
+                            workingConfig.distanceBands.get(bandIndex).textColor,
+                            defaultBand(bandIndex).textColor,
+                            color -> workingConfig.distanceBands.get(bandIndex).textColor = color
+                    )
 
             ), bandRowX, y, bandControlWidth, buttonHeight);
 
             bandTextColorButtons.add(textBandColor);
 
-            ButtonWidget textBandColorReset = addLeftButton(ButtonWidget.builder
+            Button textBandColorReset = addLeftButton(Button.builder
             (
-                    Text.literal(""),
-                    buttonWidget -> resetBandTextColor(bandIndex)
+                    Component.literal(""),
+                    button -> resetBandTextColor(bandIndex)
 
             ), bandResetX, y, 20, buttonHeight);
 
@@ -847,25 +850,25 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
             y += 25;
 
-            ButtonWidget shadowBandColor = addLeftButton(ButtonWidget.builder
+            Button shadowBandColor = addLeftButton(Button.builder
             (
-                    Text.literal(""),
-                    buttonWidget -> openColorPopup
-                            (
-                                    "Band " + (bandIndex + 1) + " Shadow Color",
-                                    workingConfig.distanceBands.get(bandIndex).shadowColor,
-                                    defaultBand(bandIndex).shadowColor,
-                                    color -> workingConfig.distanceBands.get(bandIndex).shadowColor = color
-                            )
+                    Component.literal(""),
+                    button -> openColorPopup
+                    (
+                            "Band " + (bandIndex + 1) + " Shadow Color",
+                            workingConfig.distanceBands.get(bandIndex).shadowColor,
+                            defaultBand(bandIndex).shadowColor,
+                            color -> workingConfig.distanceBands.get(bandIndex).shadowColor = color
+                    )
 
             ), bandRowX, y, bandControlWidth, buttonHeight);
 
             bandShadowColorButtons.add(shadowBandColor);
 
-            ButtonWidget shadowBandColorReset = addLeftButton(ButtonWidget.builder
+            Button shadowBandColorReset = addLeftButton(Button.builder
             (
-                    Text.literal(""),
-                    buttonWidget -> resetBandShadowColor(bandIndex)
+                    Component.literal(""),
+                    button -> resetBandShadowColor(bandIndex)
 
             ), bandResetX, y, 20, buttonHeight);
 
@@ -873,25 +876,25 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
             y += 25;
 
-            ButtonWidget backgroundBandColor = addLeftButton(ButtonWidget.builder
+            Button backgroundBandColor = addLeftButton(Button.builder
             (
-                    Text.literal(""),
-                    buttonWidget -> openColorPopup
-                            (
-                                    "Band " + (bandIndex + 1) + " Background Color",
-                                    workingConfig.distanceBands.get(bandIndex).backgroundColor,
-                                    defaultBand(bandIndex).backgroundColor,
-                                    color -> workingConfig.distanceBands.get(bandIndex).backgroundColor = color
-                            )
+                    Component.literal(""),
+                    button -> openColorPopup
+                    (
+                            "Band " + (bandIndex + 1) + " Background Color",
+                            workingConfig.distanceBands.get(bandIndex).backgroundColor,
+                            defaultBand(bandIndex).backgroundColor,
+                            color -> workingConfig.distanceBands.get(bandIndex).backgroundColor = color
+                    )
 
             ), bandRowX, y, bandControlWidth, buttonHeight);
 
             bandBackgroundColorButtons.add(backgroundBandColor);
 
-            ButtonWidget backgroundBandColorReset = addLeftButton(ButtonWidget.builder
+            Button backgroundBandColorReset = addLeftButton(Button.builder
             (
-                    Text.literal(""),
-                    buttonWidget -> resetBandBackgroundColor(bandIndex)
+                    Component.literal(""),
+                    button -> resetBandBackgroundColor(bandIndex)
 
             ), bandResetX, y, 20, buttonHeight);
 
@@ -904,34 +907,34 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
         /* ----- 우측 하단 ----- */
 
-        this.addDrawableChild(ButtonWidget.builder
+        this.addRenderableWidget(Button.builder
         (
-                Text.literal("Reset"),
-                buttonWidget ->
+                Component.literal("Reset"),
+                button ->
                 {
                     this.workingConfig = new PlayerReachDisplayConfig();
                     this.init();
                 }
 
-        ).dimensions(resetActionX, actionTopY, actionWidth, buttonHeight).build());
+        ).bounds(resetActionX, actionTopY, actionWidth, buttonHeight).build());
 
-        this.addDrawableChild(ButtonWidget.builder
+        this.addRenderableWidget(Button.builder
         (
-                Text.literal("Cancel"),
-                buttonWidget -> MinecraftClient.getInstance().setScreen(parent)
+                Component.literal("Cancel"),
+                button -> Minecraft.getInstance().setScreen(parent)
 
-        ).dimensions(cancelActionX, actionTopY, actionWidth, buttonHeight).build());
+        ).bounds(cancelActionX, actionTopY, actionWidth, buttonHeight).build());
 
-        this.addDrawableChild(ButtonWidget.builder
+        this.addRenderableWidget(Button.builder
         (
-                Text.literal("Apply"),
-                buttonWidget ->
+                Component.literal("Apply"),
+                button ->
                 {
                     saveWorkingConfig();
-                    MinecraftClient.getInstance().setScreen(parent);
+                    Minecraft.getInstance().setScreen(parent);
                 }
 
-        ).dimensions(applyX, applyY, applyWidth, buttonHeight).build());
+        ).bounds(applyX, applyY, applyWidth, buttonHeight).build());
 
 
 
@@ -952,9 +955,9 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
     /* ----- 컨트롤 추가 ----- */
 
-    private <T extends ClickableWidget> T addLeftControl(T widget, int baseY)
+    private <T extends AbstractWidget> T addLeftControl(T widget, int baseY)
     {
-        this.addDrawableChild(widget);
+        this.addRenderableWidget(widget);
 
         leftControls.add(widget);
         leftControlBaseY.add(baseY);
@@ -962,9 +965,9 @@ public class PlayerReachDisplayConfigScreen extends Screen
         return widget;
     }
 
-    private ButtonWidget addLeftButton(ButtonWidget.Builder builder, int x, int baseY, int width, int height)
+    private Button addLeftButton(Button.Builder builder, int x, int baseY, int width, int height)
     {
-        ButtonWidget buttonWidget = builder.dimensions
+        Button button = builder.bounds
         (
                 x,
                 baseY - scrollOffset,
@@ -972,7 +975,7 @@ public class PlayerReachDisplayConfigScreen extends Screen
                 height
         ).build();
 
-        return addLeftControl(buttonWidget, baseY);
+        return addLeftControl(button, baseY);
     }
 
     private ConfigSliderWidget addLeftSlider
@@ -1010,7 +1013,7 @@ public class PlayerReachDisplayConfigScreen extends Screen
     {
         for (int i = 0; i < leftControls.size(); i++)
         {
-            ClickableWidget widget = leftControls.get(i);
+            AbstractWidget widget = leftControls.get(i);
 
             int baseY = leftControlBaseY.get(i);
 
@@ -1022,6 +1025,7 @@ public class PlayerReachDisplayConfigScreen extends Screen
     {
         sectionHeaders.add(new SectionHeader(title, y));
     }
+
 
 
     /* ----- Band 추가/삭제 헬퍼 ----- */
@@ -1054,7 +1058,6 @@ public class PlayerReachDisplayConfigScreen extends Screen
                < PlayerReachDisplayConfig.MAX_DISTANCE_BAND_FROM - PlayerReachDisplayConfig.DISTANCE_BAND_GAP;
     }
 
-
     private void removeDistanceBand()
     {
         if (workingConfig.distanceBands.size() <= PlayerReachDisplayConfig.MIN_DISTANCE_BAND_COUNT)
@@ -1066,7 +1069,6 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
         this.init();
     }
-
 
     private DistanceColorBand createDistanceBandFromLast()
     {
@@ -1097,6 +1099,7 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
         return band;
     }
+
 
 
     /* ----- Band 리셋 헬퍼 ----- */
@@ -1177,51 +1180,46 @@ public class PlayerReachDisplayConfigScreen extends Screen
     /* ----- 렌더 ----- */
 
     @Override
-    public void render(DrawContext drawContext, int mouseX, int mouseY, float delta)
+    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta)
     {
         int centerX = this.width / 2;
 
         int leftWidth   = centerX + this.width / 6;
         int leftCenterX = leftWidth / 2;
 
-        this.renderBackground(drawContext, mouseX, mouseY, delta);
+        graphics.fill
+        (
+                0,
+                0,
+                this.width,
+                this.height,
+                0x88000000
+        );
 
-        drawRightPanel(drawContext, leftWidth);
+        drawRightPanel(graphics, leftWidth);
 
-        super.render(drawContext, mouseX, mouseY, delta);
-        renderPreview(drawContext);
+        super.extractRenderState(graphics, mouseX, mouseY, delta);
+        renderPreview(graphics);
 
-        drawSectionHeaders(drawContext, leftWidth, leftCenterX);
-        drawAllRows(drawContext);
+        drawSectionHeaders(graphics, leftWidth, leftCenterX);
+        drawAllRows(graphics);
 
-        drawScreenChrome(drawContext, centerX, leftWidth);
-
-        var matrices = drawContext.getMatrices();
+        drawScreenChrome(graphics, centerX, leftWidth);
 
         if (colorPopup != null)
         {
-            matrices.push();
-            matrices.translate(0, 0, 500);
-
-            colorPopup.render(drawContext, this.textRenderer, this.width, this.height, mouseX, mouseY);
-
-            matrices.pop();
+            colorPopup.render(graphics, this.font, this.width, this.height, mouseX, mouseY);
         }
 
         if (entityListPopup != null)
         {
-            matrices.push();
-            matrices.translate(0, 0, 500);
-
-            entityListPopup.render(drawContext, this.textRenderer, this.width, this.height, mouseX, mouseY);
-
-            matrices.pop();
+            entityListPopup.render(graphics, this.font, this.width, this.height, mouseX, mouseY);
         }
     }
 
-    private void drawRightPanel(DrawContext drawContext, int leftWidth)
+    private void drawRightPanel(GuiGraphicsExtractor graphics, int leftWidth)
     {
-        drawContext.fill
+        graphics.fill
         (
                 leftWidth,
                 START_Y + 16,
@@ -1231,7 +1229,7 @@ public class PlayerReachDisplayConfigScreen extends Screen
         );
     }
 
-    private void drawSectionHeaders(DrawContext drawContext, int leftWidth, int leftCenterX)
+    private void drawSectionHeaders(GuiGraphicsExtractor graphics, int leftWidth, int leftCenterX)
     {
         for (SectionHeader header : sectionHeaders)
         {
@@ -1242,33 +1240,33 @@ public class PlayerReachDisplayConfigScreen extends Screen
                 continue;
             }
 
-            drawContext.drawText
+            graphics.text
             (
-                    this.textRenderer,
-                    Text.literal("▼"),
+                    this.font,
+                    "▼",
                     10,
                     headerY,
                     0xFFFFFFFF,
                     false
             );
 
-            drawContext.drawText
+            graphics.text
             (
-                    this.textRenderer,
-                    Text.literal("▼"),
+                    this.font,
+                    "▼",
                     leftWidth - 20,
                     headerY,
                     0xFFFFFFFF,
                     false
             );
 
-            Text title = Text.literal(header.title());
+            String title = header.title();
 
-            drawContext.drawText
+            graphics.text
             (
-                    this.textRenderer,
+                    this.font,
                     title,
-                    leftCenterX - this.textRenderer.getWidth(title) / 2,
+                    leftCenterX - this.font.width(title) / 2,
                     headerY,
                     0xFFFFFFFF,
                     false
@@ -1276,16 +1274,11 @@ public class PlayerReachDisplayConfigScreen extends Screen
         }
     }
 
-    private void drawScreenChrome(DrawContext drawContext, int centerX, int leftWidth)
+    private void drawScreenChrome(GuiGraphicsExtractor graphics, int centerX, int leftWidth)
     {
-        var matrices = drawContext.getMatrices();
-
-        matrices.push();
-        matrices.translate(0, 0, 300);
-
         int titleBottom = START_Y + 16;
 
-        drawContext.fill
+        graphics.fill
         (
                 0,
                 0,
@@ -1294,7 +1287,7 @@ public class PlayerReachDisplayConfigScreen extends Screen
                 0xFF000000
         );
 
-        drawContext.fill
+        graphics.fill
         (
                 0,
                 titleBottom - 2,
@@ -1303,7 +1296,7 @@ public class PlayerReachDisplayConfigScreen extends Screen
                 0x55FFFFFF
         );
 
-        drawContext.fill
+        graphics.fill
         (
                 0,
                 titleBottom - 1,
@@ -1312,16 +1305,17 @@ public class PlayerReachDisplayConfigScreen extends Screen
                 0xFF000000
         );
 
-        drawContext.drawCenteredTextWithShadow
+        drawCenteredText
         (
-                this.textRenderer,
-                this.title,
+                graphics,
+                this.font,
+                this.title.getString(),
                 centerX,
                 12,
                 0xFFFFFFFF
         );
 
-        drawContext.fill
+        graphics.fill
         (
                 leftWidth - 1,
                 titleBottom,
@@ -1330,7 +1324,7 @@ public class PlayerReachDisplayConfigScreen extends Screen
                 0xAAFFFFFF
         );
 
-        drawContext.fill
+        graphics.fill
         (
                 leftWidth,
                 titleBottom,
@@ -1338,15 +1332,13 @@ public class PlayerReachDisplayConfigScreen extends Screen
                 this.height,
                 0xAA000000
         );
-
-        matrices.pop();
     }
 
 
 
     /* ----- 프리뷰 ----- */
 
-    private void renderPreview(DrawContext drawContext)
+    private void renderPreview(GuiGraphicsExtractor graphics)
     {
         if (workingConfig == null)
         {
@@ -1355,7 +1347,7 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
         PreviewLayout preview = createPreviewLayout();
 
-        drawContext.fill
+        graphics.fill
         (
                 preview.x() - 2,
                 preview.y() - 2,
@@ -1364,7 +1356,7 @@ public class PlayerReachDisplayConfigScreen extends Screen
                 0xFFFFFFFF
         );
 
-        drawContext.fill
+        graphics.fill
         (
                 preview.x() - 1,
                 preview.y() - 1,
@@ -1373,9 +1365,9 @@ public class PlayerReachDisplayConfigScreen extends Screen
                 0xFF000000
         );
 
-        drawContext.drawTexture
+        graphics.blit
         (
-                RenderLayer::getGuiTextured,
+                RenderPipelines.GUI_TEXTURED,
                 PREVIEW_BACKGROUND,
                 preview.x(),
                 preview.y(),
@@ -1395,22 +1387,22 @@ public class PlayerReachDisplayConfigScreen extends Screen
         previewConfig.positionX = 0.5;
         previewConfig.positionY = 0.5;
 
-        var matrices = drawContext.getMatrices();
+        var matrices = graphics.pose();
 
-        matrices.push();
-        matrices.translate(preview.x(), preview.y(), 0);
+        matrices.pushMatrix();
+        matrices.translate((float)preview.x(), (float)preview.y());
 
         PlayerReachDisplayRenderer.render
         (
-                drawContext,
-                this.textRenderer,
+                graphics,
+                this.font,
                 previewConfig,
                 2.88,
                 preview.width(),
                 preview.height()
         );
 
-        matrices.pop();
+        matrices.popMatrix();
     }
 
     private PreviewLayout createPreviewLayout()
@@ -1458,62 +1450,62 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
     /* ----- 행 렌더 ----- */
 
-    private void drawAllRows(DrawContext drawContext)
+    private void drawAllRows(GuiGraphicsExtractor graphics)
     {
-        drawAppearanceRows(drawContext);
-        drawTransformRows(drawContext);
-        drawColorRows(drawContext);
-        drawKeepLastDistanceRows(drawContext);
-        drawDisplayModeRows(drawContext);
-        drawEntityFilterRows(drawContext);
-        drawDistanceColorRows(drawContext);
+        drawAppearanceRows(graphics);
+        drawTransformRows(graphics);
+        drawColorRows(graphics);
+        drawKeepLastDistanceRows(graphics);
+        drawDisplayModeRows(graphics);
+        drawEntityFilterRows(graphics);
+        drawDistanceColorRows(graphics);
     }
 
-    private void drawAppearanceRows(DrawContext drawContext)
+    private void drawAppearanceRows(GuiGraphicsExtractor graphics)
     {
-        drawToggleRow(drawContext, textToggle, "Enable Reach", workingConfig.showReach);
-        drawResetIconIfPresent(drawContext, textReset);
+        drawToggleRow(graphics, textToggle, "Enable Reach", workingConfig.showReach);
+        drawResetIconIfPresent(graphics, textReset);
 
-        drawToggleRow(drawContext, shadowToggle, "Text Shadow", workingConfig.showShadow);
-        drawResetIconIfPresent(drawContext, shadowReset);
+        drawToggleRow(graphics, shadowToggle, "Text Shadow", workingConfig.showShadow);
+        drawResetIconIfPresent(graphics, shadowReset);
 
-        drawToggleRow(drawContext, backgroundToggle, "Text Background", workingConfig.showBackground);
-        drawResetIconIfPresent(drawContext, backgroundReset);
+        drawToggleRow(graphics, backgroundToggle, "Text Background", workingConfig.showBackground);
+        drawResetIconIfPresent(graphics, backgroundReset);
     }
 
-    private void drawTransformRows(DrawContext drawContext)
+    private void drawTransformRows(GuiGraphicsExtractor graphics)
     {
-        drawResetIconIfPresent(drawContext, scaleReset);
-        drawSimpleLabelRow(drawContext, positionToggle, "Edit Position");
+        drawResetIconIfPresent(graphics, scaleReset);
+        drawSimpleLabelRow(graphics, positionToggle, "Edit Position");
     }
 
-    private void drawColorRows(DrawContext drawContext)
+    private void drawColorRows(GuiGraphicsExtractor graphics)
     {
-        drawColorRow(drawContext, textColorButton, "Main Color", workingConfig.textColor);
-        drawResetIconIfPresent(drawContext, textColorReset);
+        drawColorRow(graphics, textColorButton, "Main Color", workingConfig.textColor);
+        drawResetIconIfPresent(graphics, textColorReset);
 
-        drawColorRow(drawContext, shadowColorButton, "Shadow Color", workingConfig.shadowColor);
-        drawResetIconIfPresent(drawContext, shadowColorReset);
+        drawColorRow(graphics, shadowColorButton, "Shadow Color", workingConfig.shadowColor);
+        drawResetIconIfPresent(graphics, shadowColorReset);
 
-        drawColorRow(drawContext, backgroundColorButton, "Background Color", workingConfig.backgroundColor);
-        drawResetIconIfPresent(drawContext, backgroundColorReset);
+        drawColorRow(graphics, backgroundColorButton, "Background Color", workingConfig.backgroundColor);
+        drawResetIconIfPresent(graphics, backgroundColorReset);
     }
 
-    private void drawKeepLastDistanceRows(DrawContext drawContext)
+    private void drawKeepLastDistanceRows(GuiGraphicsExtractor graphics)
     {
         drawToggleRow
         (
-                drawContext,
+                graphics,
                 keepLastDistanceToggle,
-                "Keep Last Distance",
+                "Reset Timer",
                 !workingConfig.keepLastHitDistance
         );
 
-        drawResetIconIfPresent(drawContext, keepLastDistanceReset);
-        drawResetIconIfPresent(drawContext, resetSecondsReset);
+        drawResetIconIfPresent(graphics, keepLastDistanceReset);
+        drawResetIconIfPresent(graphics, resetSecondsReset);
     }
 
-    private void drawDisplayModeRows(DrawContext drawContext)
+    private void drawDisplayModeRows(GuiGraphicsExtractor graphics)
     {
         String modeText = switch (workingConfig.displayMode)
         {
@@ -1522,64 +1514,64 @@ public class PlayerReachDisplayConfigScreen extends Screen
             case WITH_M      -> "2.88 M";
         };
 
-        drawValueRow(drawContext, displayModeButton, "Display Format", modeText);
-        drawResetIconIfPresent(drawContext, displayModeReset);
+        drawValueRow(graphics, displayModeButton, "Display Format", modeText);
+        drawResetIconIfPresent(graphics, displayModeReset);
     }
 
-    private void drawEntityFilterRows(DrawContext drawContext)
+    private void drawEntityFilterRows(GuiGraphicsExtractor graphics)
     {
         drawToggleRow
         (
-                drawContext,
+                graphics,
                 entityFilterToggle,
                 "Enable Entity Filter",
                 workingConfig.enableEntityFilter
         );
 
-        drawResetIconIfPresent(drawContext, entityFilterToggleReset);
+        drawResetIconIfPresent(graphics, entityFilterToggleReset);
 
         drawValueRow
         (
-                drawContext,
+                graphics,
                 entityFilterModeButton,
                 "Filter Mode",
                 workingConfig.useWhitelist ? "Whitelist" : "Blacklist"
         );
 
-        drawResetIconIfPresent(drawContext, entityFilterModeReset);
+        drawResetIconIfPresent(graphics, entityFilterModeReset);
 
         drawValueRow
         (
-                drawContext,
+                graphics,
                 whitelistButton,
                 "Whitelist (" + safeSize(workingConfig.whitelist) + ")",
                 describeEntityList(workingConfig.whitelist)
         );
 
-        drawResetIconIfPresent(drawContext, whitelistReset);
+        drawResetIconIfPresent(graphics, whitelistReset);
 
         drawValueRow
         (
-                drawContext,
+                graphics,
                 blacklistButton,
                 "Blacklist (" + safeSize(workingConfig.blacklist) + ")",
                 describeEntityList(workingConfig.blacklist)
         );
 
-        drawResetIconIfPresent(drawContext, blacklistReset);
+        drawResetIconIfPresent(graphics, blacklistReset);
     }
 
-    private void drawDistanceColorRows(DrawContext drawContext)
+    private void drawDistanceColorRows(GuiGraphicsExtractor graphics)
     {
         drawToggleRow
         (
-                drawContext,
+                graphics,
                 distanceColorToggle,
                 "Enable Distance Color",
                 workingConfig.enableDistanceColor
         );
 
-        drawResetIconIfPresent(drawContext, distanceColorReset);
+        drawResetIconIfPresent(graphics, distanceColorReset);
 
         for (int i = 0; i < workingConfig.distanceBands.size(); i++)
         {
@@ -1591,7 +1583,7 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
                 if (fromResetIndex < bandFromResetButtons.size())
                 {
-                    drawResetIconIfPresent(drawContext, bandFromResetButtons.get(fromResetIndex));
+                    drawResetIconIfPresent(graphics, bandFromResetButtons.get(fromResetIndex));
                 }
             }
 
@@ -1599,7 +1591,7 @@ public class PlayerReachDisplayConfigScreen extends Screen
             {
                 drawColorRow
                 (
-                        drawContext,
+                        graphics,
                         bandTextColorButtons.get(i),
                         "Band " + (i + 1) + " Main",
                         band.textColor
@@ -1608,14 +1600,14 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
             if (i < bandTextColorResetButtons.size())
             {
-                drawResetIconIfPresent(drawContext, bandTextColorResetButtons.get(i));
+                drawResetIconIfPresent(graphics, bandTextColorResetButtons.get(i));
             }
 
             if (i < bandShadowColorButtons.size())
             {
                 drawColorRow
                 (
-                        drawContext,
+                        graphics,
                         bandShadowColorButtons.get(i),
                         "Band " + (i + 1) + " Shadow",
                         band.shadowColor
@@ -1624,14 +1616,14 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
             if (i < bandShadowColorResetButtons.size())
             {
-                drawResetIconIfPresent(drawContext, bandShadowColorResetButtons.get(i));
+                drawResetIconIfPresent(graphics, bandShadowColorResetButtons.get(i));
             }
 
             if (i < bandBackgroundColorButtons.size())
             {
                 drawColorRow
                 (
-                        drawContext,
+                        graphics,
                         bandBackgroundColorButtons.get(i),
                         "Band " + (i + 1) + " Background",
                         band.backgroundColor
@@ -1640,7 +1632,7 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
             if (i < bandBackgroundColorResetButtons.size())
             {
-                drawResetIconIfPresent(drawContext, bandBackgroundColorResetButtons.get(i));
+                drawResetIconIfPresent(graphics, bandBackgroundColorResetButtons.get(i));
             }
         }
     }
@@ -1649,59 +1641,59 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
     /* ----- 행 렌더 헬퍼 ----- */
 
-    private void drawResetIconIfPresent(DrawContext drawContext, ButtonWidget button)
+    private void drawResetIconIfPresent(GuiGraphicsExtractor graphics, Button button)
     {
         if (button != null)
         {
-            drawResetIcon(drawContext, button);
+            drawResetIcon(graphics, button);
         }
     }
 
-    private void drawSimpleLabelRow(DrawContext drawContext, ButtonWidget button, String label)
+    private void drawSimpleLabelRow(GuiGraphicsExtractor graphics, AbstractWidget widget, String label)
     {
-        if (button == null)
+        if (widget == null)
         {
             return;
         }
 
-        int x = button.getX();
-        int y = button.getY();
+        int x = widget.getX();
+        int y = widget.getY();
 
-        int height = button.getHeight();
+        int height = widget.getHeight();
 
-        int color = getWidgetTextColor(button);
+        int color = getWidgetTextColor(widget);
 
-        drawContext.drawText
+        graphics.text
         (
-                this.textRenderer,
+                this.font,
                 label,
                 x + 4,
-                y + (height - this.textRenderer.fontHeight) / 2,
+                y + (height - this.font.lineHeight) / 2,
                 color,
                 false
         );
     }
 
-    private void drawValueRow(DrawContext drawContext, ButtonWidget button, String label, String value)
+    private void drawValueRow(GuiGraphicsExtractor graphics, AbstractWidget widget, String label, String value)
     {
-        if (button == null)
+        if (widget == null)
         {
             return;
         }
 
-        int color = getWidgetTextColor(button);
+        int color = getWidgetTextColor(widget);
 
-        int x = button.getX();
-        int y = button.getY();
+        int x = widget.getX();
+        int y = widget.getY();
 
-        int width  = button.getWidth();
-        int height = button.getHeight();
+        int width  = widget.getWidth();
+        int height = widget.getHeight();
 
-        int textY = y + (height - this.textRenderer.fontHeight) / 2;
+        int textY = y + (height - this.font.lineHeight) / 2;
 
-        drawContext.drawText
+        graphics.text
         (
-                this.textRenderer,
+                this.font,
                 label,
                 x + 4,
                 textY,
@@ -1711,38 +1703,38 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
         String shownValue = trimToWidth(value == null ? "" : value, Math.max(20, width / 2));
 
-        drawContext.drawText
+        graphics.text
         (
-                this.textRenderer,
+                this.font,
                 shownValue,
-                x + width - this.textRenderer.getWidth(shownValue) - 4,
+                x + width - this.font.width(shownValue) - 4,
                 textY,
                 color,
                 false
         );
     }
 
-    private void drawToggleRow(DrawContext drawContext, ButtonWidget button, String label, boolean enabled)
+    private void drawToggleRow(GuiGraphicsExtractor graphics, AbstractWidget widget, String label, boolean enabled)
     {
-        if (button == null)
+        if (widget == null)
         {
             return;
         }
 
-        int x = button.getX();
-        int y = button.getY();
+        int x = widget.getX();
+        int y = widget.getY();
 
-        int width  = button.getWidth();
-        int height = button.getHeight();
+        int width  = widget.getWidth();
+        int height = widget.getHeight();
 
-        int color = getWidgetTextColor(button);
+        int color = getWidgetTextColor(widget);
 
-        drawContext.drawText
+        graphics.text
         (
-                this.textRenderer,
+                this.font,
                 label,
                 x + 4,
-                y + (height - this.textRenderer.fontHeight) / 2,
+                y + (height - this.font.lineHeight) / 2,
                 color,
                 false
         );
@@ -1754,42 +1746,37 @@ public class PlayerReachDisplayConfigScreen extends Screen
         int iconX = x + width - iconSize - 4;
         int iconY = y + (height - iconSize) / 2;
 
-        drawContext.drawTexture
+        drawIcon
         (
-                RenderLayer::getGuiTextured,
+                graphics,
                 icon,
                 iconX,
                 iconY,
-                0,
-                0,
-                iconSize,
-                iconSize,
-                iconSize,
                 iconSize,
                 color
         );
     }
 
-    private void drawColorRow(DrawContext drawContext, ButtonWidget colorButton, String label, int argb)
+    private void drawColorRow(GuiGraphicsExtractor graphics, AbstractWidget widget, String label, int argb)
     {
-        if (colorButton == null)
+        if (widget == null)
         {
             return;
         }
 
-        int x = colorButton.getX();
-        int y = colorButton.getY();
+        int x = widget.getX();
+        int y = widget.getY();
 
-        int width  = colorButton.getWidth();
-        int height = colorButton.getHeight();
+        int width  = widget.getWidth();
+        int height = widget.getHeight();
 
-        int color = getWidgetTextColor(colorButton);
+        int color = getWidgetTextColor(widget);
 
-        int labelY = y + (height - this.textRenderer.fontHeight) / 2;
+        int labelY = y + (height - this.font.lineHeight) / 2;
 
-        drawContext.drawText
+        graphics.text
         (
-                this.textRenderer,
+                this.font,
                 label,
                 x + 4,
                 labelY,
@@ -1797,10 +1784,10 @@ public class PlayerReachDisplayConfigScreen extends Screen
                 false
         );
 
-        int borderColor = colorButton.active ? 0xFF000000 : 0x66000000;
-        int swatchColor = colorButton.active ? argb : withAlphaMultiplier(argb, 0.4f);
+        int borderColor = widget.active ? 0xFF000000 : 0x66000000;
+        int swatchColor = widget.active ? argb : withAlphaMultiplier(argb, 0.4f);
 
-        drawContext.fill
+        graphics.fill
         (
                 x + width - 16,
                 y + 4,
@@ -1809,7 +1796,7 @@ public class PlayerReachDisplayConfigScreen extends Screen
                 borderColor
         );
 
-        drawContext.fill
+        graphics.fill
         (
                 x + width - 15,
                 y + 5,
@@ -1819,7 +1806,7 @@ public class PlayerReachDisplayConfigScreen extends Screen
         );
     }
 
-    private void drawResetIcon(DrawContext drawContext, ButtonWidget button)
+    private void drawResetIcon(GuiGraphicsExtractor graphics, Button button)
     {
         int x = button.getX();
         int y = button.getY();
@@ -1834,19 +1821,61 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
         int color = getWidgetTextColor(button);
 
-        drawContext.drawTexture
+        drawIcon
         (
-                RenderLayer::getGuiTextured,
+                graphics,
                 RESET_ICON,
                 iconX,
                 iconY,
-                0.0f,
-                0.0f,
-                iconSize,
-                iconSize,
-                iconSize,
                 iconSize,
                 color
+        );
+    }
+
+    private void drawIcon
+    (
+            GuiGraphicsExtractor graphics,
+            Identifier           icon,
+            int                  x,
+            int                  y,
+            int                  size,
+            int                  color
+    )
+    {
+        graphics.blit
+        (
+                RenderPipelines.GUI_TEXTURED,
+                icon,
+                x,
+                y,
+                0.0f,
+                0.0f,
+                size,
+                size,
+                size,
+                size,
+                color
+        );
+    }
+
+    private void drawCenteredText
+    (
+            GuiGraphicsExtractor graphics,
+            Font                 font,
+            String               text,
+            int                  centerX,
+            int                  y,
+            int                  color
+    )
+    {
+        graphics.text
+        (
+                font,
+                text,
+                centerX - font.width(text) / 2,
+                y,
+                color,
+                true
         );
     }
 
@@ -2072,7 +2101,7 @@ public class PlayerReachDisplayConfigScreen extends Screen
         }
     }
 
-    private void setWidgetEnabled(ClickableWidget widget, boolean enabled)
+    private void setWidgetEnabled(AbstractWidget widget, boolean enabled)
     {
         if (widget == null)
         {
@@ -2088,24 +2117,45 @@ public class PlayerReachDisplayConfigScreen extends Screen
     /* ----- 입력 ----- */
 
     @Override
-    public boolean charTyped(char chr, int modifiers)
+    public boolean charTyped(CharacterEvent event)
     {
-        if (colorPopup != null)
+        String text = event.codepointAsString();
+
+        if (text.isEmpty())
         {
-            return colorPopup.charTyped(chr, modifiers);
+            return true;
         }
 
-        if (entityListPopup != null)
+        for (int i = 0; i < text.length(); i++)
         {
-            return entityListPopup.charTyped(chr, modifiers);
+            char chr = text.charAt(i);
+
+            if (colorPopup != null)
+            {
+                colorPopup.charTyped(chr, 0);
+                continue;
+            }
+
+            if (entityListPopup != null)
+            {
+                entityListPopup.charTyped(chr, 0);
+                continue;
+            }
         }
 
-        return super.charTyped(chr, modifiers);
+        if (colorPopup != null || entityListPopup != null)
+        {
+            return true;
+        }
+
+        return super.charTyped(event);
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers)
+    public boolean keyPressed(KeyEvent event)
     {
+        int keyCode = event.key();
+
         if (colorPopup != null)
         {
             return colorPopup.keyPressed(keyCode);
@@ -2116,12 +2166,17 @@ public class PlayerReachDisplayConfigScreen extends Screen
             return entityListPopup.keyPressed(keyCode);
         }
 
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return super.keyPressed(event);
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button)
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick)
     {
+        double mouseX = event.x();
+        double mouseY = event.y();
+
+        int button = event.button();
+
         if (colorPopup != null)
         {
             return colorPopup.mouseClicked(mouseX, mouseY, button);
@@ -2140,12 +2195,17 @@ public class PlayerReachDisplayConfigScreen extends Screen
             return true;
         }
 
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.mouseClicked(event, doubleClick);
     }
 
     @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double dx, double dy)
+    public boolean mouseDragged(MouseButtonEvent event, double dx, double dy)
     {
+        double mouseX = event.x();
+        double mouseY = event.y();
+
+        int button = event.button();
+
         if (colorPopup != null)
         {
             return colorPopup.mouseDragged(mouseX, mouseY, button, dx, dy);
@@ -2156,12 +2216,17 @@ public class PlayerReachDisplayConfigScreen extends Screen
             return entityListPopup.mouseDragged(mouseX, mouseY, button, dx, dy);
         }
 
-        return super.mouseDragged(mouseX, mouseY, button, dx, dy);
+        return super.mouseDragged(event, dx, dy);
     }
 
     @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button)
+    public boolean mouseReleased(MouseButtonEvent event)
     {
+        double mouseX = event.x();
+        double mouseY = event.y();
+
+        int button = event.button();
+
         if (colorPopup != null)
         {
             return colorPopup.mouseReleased(mouseX, mouseY, button);
@@ -2172,7 +2237,7 @@ public class PlayerReachDisplayConfigScreen extends Screen
             return entityListPopup.mouseReleased(mouseX, mouseY, button);
         }
 
-        return super.mouseReleased(mouseX, mouseY, button);
+        return super.mouseReleased(event);
     }
 
     @Override
@@ -2213,15 +2278,15 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
         colorPopup = new ColorPickerPopup
         (
-                Text.literal(title),
+                Component.literal(title),
                 currentColor,
                 resetColor,
-                color ->
+                color -> setter.accept(color),
+                () ->
                 {
-                    setter.accept(color);
                     updateEnableStates();
-                },
-                () -> colorPopup = null
+                    colorPopup = null;
+                }
         );
     }
 
@@ -2237,7 +2302,7 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
         entityListPopup = new EntityListPopup
         (
-                Text.literal(title),
+                Component.literal(title),
                 currentEntries,
                 resetEntries,
                 result ->
@@ -2273,7 +2338,7 @@ public class PlayerReachDisplayConfigScreen extends Screen
         return Math.clamp((actualValue - min) / (max - min), 0.0, 1.0);
     }
 
-    private int getWidgetTextColor(ClickableWidget widget)
+    private int getWidgetTextColor(AbstractWidget widget)
     {
         float alpha = widget.active ? 1.0f : 0.4f;
 
@@ -2297,14 +2362,14 @@ public class PlayerReachDisplayConfigScreen extends Screen
             return "";
         }
 
-        if (this.textRenderer.getWidth(text) <= maxWidth)
+        if (this.font.width(text) <= maxWidth)
         {
             return text;
         }
 
         String result = text;
 
-        while (!result.isEmpty() && this.textRenderer.getWidth(result + "...") > maxWidth)
+        while (!result.isEmpty() && this.font.width(result + "...") > maxWidth)
         {
             result = result.substring(0, result.length() - 1);
         }
@@ -2348,7 +2413,6 @@ public class PlayerReachDisplayConfigScreen extends Screen
 
         return a.equals(b);
     }
-
 
     private void setBandFromDistance(int bandIndex, double value)
     {
