@@ -7,14 +7,14 @@ import java.util.Locale;
 import java.util.ArrayList;
 import java.util.function.Consumer;
 
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 
-import net.minecraft.sound.SoundEvents;
+import net.minecraft.network.chat.Component;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.sound.PositionedSoundInstance;
+import net.minecraft.sounds.SoundEvents;
 
 
 
@@ -41,12 +41,12 @@ public class EntityListPopup
 
 
 
-    private final Text                   title;
-    private final List<String>           originalEntries;
-    private final List<String>           resetEntries;
-    private final List<String>           workingEntries = new ArrayList<>();
+    private final Component             title;
+    private final List<String>          originalEntries;
+    private final List<String>          resetEntries;
+    private final List<String>          workingEntries = new ArrayList<>();
     private final Consumer<List<String>> onDone;
-    private final Runnable               onClose;
+    private final Runnable              onClose;
 
     private String  inputBuffer  = "";
     private boolean inputFocused = true;
@@ -81,7 +81,7 @@ public class EntityListPopup
 
     public EntityListPopup
     (
-            Text                   title,
+            Component              title,
             List<String>           initialEntries,
             List<String>           resetEntries,
             Consumer<List<String>> onDone,
@@ -105,31 +105,31 @@ public class EntityListPopup
 
     public void render
     (
-            DrawContext  drawContext,
-            TextRenderer textRenderer,
-            int          screenWidth,
-            int          screenHeight,
-            int          mouseX,
-            int          mouseY
+            GuiGraphicsExtractor graphics,
+            Font                 font,
+            int                  screenWidth,
+            int                  screenHeight,
+            int                  mouseX,
+            int                  mouseY
     )
     {
         updatePopupPosition(screenWidth, screenHeight);
 
         PopupLayout layout = createLayout();
 
-        drawOverlay(drawContext, screenWidth, screenHeight);
-        drawPopupFrame(drawContext);
-        drawTitle(drawContext, textRenderer);
-        drawList(drawContext, textRenderer, layout, mouseX, mouseY);
-        drawInput(drawContext, textRenderer, layout);
-        drawButtons(drawContext, textRenderer, layout, mouseX, mouseY);
+        drawOverlay(graphics, screenWidth, screenHeight);
+        drawPopupFrame(graphics);
+        drawTitle(graphics, font);
+        drawList(graphics, font, layout, mouseX, mouseY);
+        drawInput(graphics, font, layout);
+        drawButtons(graphics, font, layout, mouseX, mouseY);
     }
 
 
 
-    private void drawOverlay(DrawContext drawContext, int screenWidth, int screenHeight)
+    private void drawOverlay(GuiGraphicsExtractor graphics, int screenWidth, int screenHeight)
     {
-        drawContext.fill
+        graphics.fill
         (
                 0,
                 0,
@@ -139,9 +139,9 @@ public class EntityListPopup
         );
     }
 
-    private void drawPopupFrame(DrawContext drawContext)
+    private void drawPopupFrame(GuiGraphicsExtractor graphics)
     {
-        drawContext.fill
+        graphics.fill
         (
                 popupX,
                 popupY,
@@ -150,8 +150,9 @@ public class EntityListPopup
                 POPUP_COLOR
         );
 
-        drawContext.drawBorder
+        drawBorder
         (
+                graphics,
                 popupX,
                 popupY,
                 POPUP_WIDTH,
@@ -160,12 +161,13 @@ public class EntityListPopup
         );
     }
 
-    private void drawTitle(DrawContext drawContext, TextRenderer textRenderer)
+    private void drawTitle(GuiGraphicsExtractor graphics, Font font)
     {
-        drawContext.drawCenteredTextWithShadow
+        drawCenteredText
         (
-                textRenderer,
-                title,
+                graphics,
+                font,
+                title.getString(),
                 popupX + POPUP_WIDTH / 2,
                 popupY + 10,
                 0xFFFFFFFF
@@ -178,14 +180,14 @@ public class EntityListPopup
 
     private void drawList
     (
-            DrawContext  drawContext,
-            TextRenderer textRenderer,
-            PopupLayout  layout,
-            int          mouseX,
-            int          mouseY
+            GuiGraphicsExtractor graphics,
+            Font                 font,
+            PopupLayout          layout,
+            int                  mouseX,
+            int                  mouseY
     )
     {
-        drawContext.fill
+        graphics.fill
         (
                 layout.listX(),
                 layout.listY(),
@@ -194,8 +196,9 @@ public class EntityListPopup
                 0xFF050505
         );
 
-        drawContext.drawBorder
+        drawBorder
         (
+                graphics,
                 layout.listX(),
                 layout.listY(),
                 layout.listWidth(),
@@ -209,12 +212,13 @@ public class EntityListPopup
 
         if (workingEntries.isEmpty())
         {
-            drawContext.drawCenteredTextWithShadow
+            drawCenteredText
             (
-                    textRenderer,
-                    Text.literal("No entries"),
+                    graphics,
+                    font,
+                    "No entries",
                     layout.listX() + layout.listWidth() / 2,
-                    layout.listY() + layout.listHeight() / 2 - textRenderer.fontHeight / 2,
+                    layout.listY() + layout.listHeight() / 2 - font.lineHeight / 2,
                     0xFFAAAAAA
             );
 
@@ -232,8 +236,8 @@ public class EntityListPopup
 
             drawEntryRow
             (
-                    drawContext,
-                    textRenderer,
+                    graphics,
+                    font,
                     layout,
                     visibleIndex,
                     entryIndex,
@@ -245,13 +249,13 @@ public class EntityListPopup
 
     private void drawEntryRow
     (
-            DrawContext  drawContext,
-            TextRenderer textRenderer,
-            PopupLayout  layout,
-            int          visibleIndex,
-            int          entryIndex,
-            int          mouseX,
-            int          mouseY
+            GuiGraphicsExtractor graphics,
+            Font                 font,
+            PopupLayout          layout,
+            int                  visibleIndex,
+            int                  entryIndex,
+            int                  mouseX,
+            int                  mouseY
     )
     {
         int rowY = layout.listY() + visibleIndex * ROW_HEIGHT;
@@ -266,7 +270,7 @@ public class EntityListPopup
                 ROW_HEIGHT
         );
 
-        drawContext.fill
+        graphics.fill
         (
                 layout.listX() + 1,
                 rowY + 1,
@@ -277,17 +281,17 @@ public class EntityListPopup
 
         String entry = trimToWidth
         (
-                textRenderer,
+                font,
                 workingEntries.get(entryIndex),
                 layout.listWidth() - 35
         );
 
-        drawContext.drawText
+        graphics.text
         (
-                textRenderer,
-                Text.literal(entry),
+                font,
+                entry,
                 layout.listX() + 5,
-                rowY + (ROW_HEIGHT - textRenderer.fontHeight) / 2,
+                rowY + (ROW_HEIGHT - font.lineHeight) / 2,
                 0xFFFFFFFF,
                 false
         );
@@ -295,7 +299,7 @@ public class EntityListPopup
         int removeX = getRemoveButtonX(layout);
         int removeY = rowY + 2;
 
-        drawContext.fill
+        graphics.fill
         (
                 removeX,
                 removeY,
@@ -304,8 +308,9 @@ public class EntityListPopup
                 0xFF550000
         );
 
-        drawContext.drawBorder
+        drawBorder
         (
+                graphics,
                 removeX,
                 removeY,
                 14,
@@ -313,10 +318,11 @@ public class EntityListPopup
                 0xFFFFAAAA
         );
 
-        drawContext.drawCenteredTextWithShadow
+        drawCenteredText
         (
-                textRenderer,
-                Text.literal("x"),
+                graphics,
+                font,
+                "x",
                 removeX + 7,
                 removeY + 2,
                 0xFFFFFFFF
@@ -329,12 +335,12 @@ public class EntityListPopup
 
     private void drawInput
     (
-            DrawContext  drawContext,
-            TextRenderer textRenderer,
-            PopupLayout  layout
+            GuiGraphicsExtractor graphics,
+            Font                 font,
+            PopupLayout          layout
     )
     {
-        drawContext.fill
+        graphics.fill
         (
                 layout.inputX(),
                 layout.inputY(),
@@ -343,8 +349,9 @@ public class EntityListPopup
                 0xFF050505
         );
 
-        drawContext.drawBorder
+        drawBorder
         (
+                graphics,
                 layout.inputX(),
                 layout.inputY(),
                 layout.inputWidth(),
@@ -355,21 +362,21 @@ public class EntityListPopup
         String text  = getInputText();
         int    color = getInputTextColor();
 
-        text = trimToWidth(textRenderer, text, layout.inputWidth() - 8);
+        text = trimToWidth(font, text, layout.inputWidth() - 8);
 
-        drawContext.drawText
+        graphics.text
         (
-                textRenderer,
-                Text.literal(text),
+                font,
+                text,
                 layout.inputX() + 4,
-                layout.inputY() + (layout.inputHeight() - textRenderer.fontHeight) / 2,
+                layout.inputY() + (layout.inputHeight() - font.lineHeight) / 2,
                 color,
                 false
         );
 
         if (inputFocused)
         {
-            drawInputCursor(drawContext, textRenderer, layout);
+            drawInputCursor(graphics, font, layout);
         }
     }
 
@@ -395,9 +402,9 @@ public class EntityListPopup
 
     private void drawInputCursor
     (
-            DrawContext  drawContext,
-            TextRenderer textRenderer,
-            PopupLayout  layout
+            GuiGraphicsExtractor graphics,
+            Font                 font,
+            PopupLayout          layout
     )
     {
         int cursorX;
@@ -410,12 +417,12 @@ public class EntityListPopup
         {
             cursorX = layout.inputX() + 4 + Math.min
             (
-                    textRenderer.getWidth(inputBuffer),
+                    font.width(inputBuffer),
                     layout.inputWidth() - 10
             );
         }
 
-        drawContext.fill
+        graphics.fill
         (
                 cursorX,
                 layout.inputY() + 4,
@@ -431,17 +438,17 @@ public class EntityListPopup
 
     private void drawButtons
     (
-            DrawContext  drawContext,
-            TextRenderer textRenderer,
-            PopupLayout  layout,
-            int          mouseX,
-            int          mouseY
+            GuiGraphicsExtractor graphics,
+            Font                 font,
+            PopupLayout          layout,
+            int                  mouseX,
+            int                  mouseY
     )
     {
         drawButton
         (
-                drawContext,
-                textRenderer,
+                graphics,
+                font,
                 getAddButtonX(),
                 layout.buttonY(),
                 BUTTON_WIDTH,
@@ -454,8 +461,8 @@ public class EntityListPopup
 
         drawButton
         (
-                drawContext,
-                textRenderer,
+                graphics,
+                font,
                 getResetButtonX(),
                 layout.buttonY(),
                 BUTTON_WIDTH,
@@ -468,8 +475,8 @@ public class EntityListPopup
 
         drawButton
         (
-                drawContext,
-                textRenderer,
+                graphics,
+                font,
                 getCancelButtonX(),
                 layout.buttonY(),
                 BUTTON_WIDTH,
@@ -482,8 +489,8 @@ public class EntityListPopup
 
         drawButton
         (
-                drawContext,
-                textRenderer,
+                graphics,
+                font,
                 getDoneButtonX(),
                 layout.buttonY(),
                 BUTTON_WIDTH,
@@ -893,13 +900,13 @@ public class EntityListPopup
 
     private void playClickSound()
     {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
 
         if (client != null)
         {
             client.getSoundManager().play
             (
-                    PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.0F)
+                    SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F)
             );
         }
     }
@@ -914,16 +921,16 @@ public class EntityListPopup
 
     private void drawButton
     (
-            DrawContext  drawContext,
-            TextRenderer textRenderer,
-            int          x,
-            int          y,
-            int          width,
-            int          height,
-            String       label,
-            int          mouseX,
-            int          mouseY,
-            boolean      active
+            GuiGraphicsExtractor graphics,
+            Font                 font,
+            int                  x,
+            int                  y,
+            int                  width,
+            int                  height,
+            String               label,
+            int                  mouseX,
+            int                  mouseY,
+            boolean              active
     )
     {
         boolean hovered = active && isInside(mouseX, mouseY, x, y, width, height);
@@ -942,7 +949,7 @@ public class EntityListPopup
         int border = active ? 0xFFFFFFFF : 0xFF777777;
         int color  = active ? 0xFFFFFFFF : 0xFF777777;
 
-        drawContext.fill
+        graphics.fill
         (
                 x,
                 y,
@@ -951,8 +958,9 @@ public class EntityListPopup
                 background
         );
 
-        drawContext.drawBorder
+        drawBorder
         (
+                graphics,
                 x,
                 y,
                 width,
@@ -960,31 +968,69 @@ public class EntityListPopup
                 border
         );
 
-        drawContext.drawCenteredTextWithShadow
+        drawCenteredText
         (
-                textRenderer,
-                Text.literal(label),
+                graphics,
+                font,
+                label,
                 x + width / 2,
-                y + (height - textRenderer.fontHeight) / 2,
+                y + (height - font.lineHeight) / 2,
                 color
         );
     }
 
-    private String trimToWidth(TextRenderer textRenderer, String text, int maxWidth)
+    private void drawBorder
+    (
+            GuiGraphicsExtractor graphics,
+            int                  x,
+            int                  y,
+            int                  width,
+            int                  height,
+            int                  color
+    )
+    {
+        graphics.fill(x, y, x + width, y + 1, color);
+        graphics.fill(x, y + height - 1, x + width, y + height, color);
+        graphics.fill(x, y, x + 1, y + height, color);
+        graphics.fill(x + width - 1, y, x + width, y + height, color);
+    }
+
+    private void drawCenteredText
+    (
+            GuiGraphicsExtractor graphics,
+            Font                 font,
+            String               text,
+            int                  centerX,
+            int                  y,
+            int                  color
+    )
+    {
+        graphics.text
+        (
+                font,
+                text,
+                centerX - font.width(text) / 2,
+                y,
+                color,
+                true
+        );
+    }
+
+    private String trimToWidth(Font font, String text, int maxWidth)
     {
         if (text == null)
         {
             return "";
         }
 
-        if (textRenderer.getWidth(text) <= maxWidth)
+        if (font.width(text) <= maxWidth)
         {
             return text;
         }
 
         String result = text;
 
-        while (!result.isEmpty() && textRenderer.getWidth(result + "...") > maxWidth)
+        while (!result.isEmpty() && font.width(result + "...") > maxWidth)
         {
             result = result.substring(0, result.length() - 1);
         }
