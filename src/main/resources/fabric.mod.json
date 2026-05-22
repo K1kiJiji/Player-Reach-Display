@@ -10,14 +10,14 @@
 	"environment": "client",
 	"entrypoints":
 	{
-		"client":  ["kikijiji.playerreachdisplay.PlayerReachDisplay"],
+		"client": ["kikijiji.playerreachdisplay.PlayerReachDisplay"],
 		"modmenu": ["kikijiji.playerreachdisplay.modmenu.PlayerReachDisplayModMenu"]
 	},
 	"depends":
 	{
 		"fabricloader": ">=0.19.2",
-		"minecraft": "~1.21.4",
-		"java": ">=21",
+		"minecraft": "~26.1",
+		"java": ">=25",
 		"fabric-api": "*"
 	},
 	"suggests":

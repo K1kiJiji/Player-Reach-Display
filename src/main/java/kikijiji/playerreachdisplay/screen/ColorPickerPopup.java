@@ -4,14 +4,14 @@ package kikijiji.playerreachdisplay.screen;
 
 import java.util.function.IntConsumer;
 
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 
-import net.minecraft.sound.SoundEvents;
+import net.minecraft.network.chat.Component;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.sound.PositionedSoundInstance;
+import net.minecraft.sounds.SoundEvents;
 
 
 
@@ -45,13 +45,14 @@ public class ColorPickerPopup
 
 
 
-    private final Text        title;
+    private final Component   title;
     private final int         originalColor;
     private final int         resetColor;
     private final IntConsumer onChanged;
     private final Runnable    onClose;
 
     private int argb;
+    private int lastNotifiedColor;
 
     private float hue;
     private float saturation;
@@ -99,7 +100,7 @@ public class ColorPickerPopup
 
     public ColorPickerPopup
     (
-            Text        title,
+            Component   title,
             int         initialColor,
             int         resetColor,
             IntConsumer onChanged,
@@ -113,6 +114,7 @@ public class ColorPickerPopup
         this.onClose       = onClose;
 
         setFromColor(initialColor);
+        lastNotifiedColor = argb;
     }
 
 
@@ -121,36 +123,36 @@ public class ColorPickerPopup
 
     public void render
     (
-            DrawContext  drawContext,
-            TextRenderer textRenderer,
-            int          screenWidth,
-            int          screenHeight,
-            int          mouseX,
-            int          mouseY
+            GuiGraphicsExtractor graphics,
+            Font                 font,
+            int                  screenWidth,
+            int                  screenHeight,
+            int                  mouseX,
+            int                  mouseY
     )
     {
         updatePopupPosition(screenWidth, screenHeight);
 
         PickerLayout layout = createLayout();
 
-        drawOverlay(drawContext, screenWidth, screenHeight);
-        drawPopupFrame(drawContext);
-        drawTitle(drawContext, textRenderer);
-        drawPreview(drawContext, layout);
+        drawOverlay(graphics, screenWidth, screenHeight);
+        drawPopupFrame(graphics);
+        drawTitle(graphics, font);
+        drawPreview(graphics, layout);
 
-        drawSaturationValueArea(drawContext, layout);
-        drawHueControl(drawContext, layout);
-        drawAlphaControl(drawContext, layout);
+        drawSaturationValueArea(graphics, layout);
+        drawHueControl(graphics, layout);
+        drawAlphaControl(graphics, layout);
 
-        drawHexInput(drawContext, textRenderer, layout);
-        drawActionButtons(drawContext, textRenderer, layout, mouseX, mouseY);
+        drawHexInput(graphics, font, layout);
+        drawActionButtons(graphics, font, layout, mouseX, mouseY);
     }
 
 
 
-    private void drawOverlay(DrawContext drawContext, int screenWidth, int screenHeight)
+    private void drawOverlay(GuiGraphicsExtractor graphics, int screenWidth, int screenHeight)
     {
-        drawContext.fill
+        graphics.fill
         (
                 0,
                 0,
@@ -160,9 +162,9 @@ public class ColorPickerPopup
         );
     }
 
-    private void drawPopupFrame(DrawContext drawContext)
+    private void drawPopupFrame(GuiGraphicsExtractor graphics)
     {
-        drawContext.fill
+        graphics.fill
         (
                 popupX,
                 popupY,
@@ -171,7 +173,7 @@ public class ColorPickerPopup
                 POPUP_COLOR
         );
 
-        drawContext.drawBorder
+        graphics.outline
         (
                 popupX,
                 popupY,
@@ -181,21 +183,22 @@ public class ColorPickerPopup
         );
     }
 
-    private void drawTitle(DrawContext drawContext, TextRenderer textRenderer)
+    private void drawTitle(GuiGraphicsExtractor graphics, Font font)
     {
-        drawContext.drawCenteredTextWithShadow
+        drawCenteredText
         (
-                textRenderer,
-                title,
+                graphics,
+                font,
+                title.getString(),
                 popupX + POPUP_WIDTH / 2,
                 popupY + 10,
                 0xFFFFFFFF
         );
     }
 
-    private void drawPreview(DrawContext drawContext, PickerLayout layout)
+    private void drawPreview(GuiGraphicsExtractor graphics, PickerLayout layout)
     {
-        drawContext.fill
+        graphics.fill
         (
                 layout.previewX() - 1,
                 layout.previewY() - 1,
@@ -204,7 +207,7 @@ public class ColorPickerPopup
                 0xFFFFFFFF
         );
 
-        drawContext.fill
+        graphics.fill
         (
                 layout.previewX(),
                 layout.previewY(),
@@ -214,14 +217,14 @@ public class ColorPickerPopup
         );
     }
 
-    private void drawSaturationValueArea(DrawContext drawContext, PickerLayout layout)
+    private void drawSaturationValueArea(GuiGraphicsExtractor graphics, PickerLayout layout)
     {
-        drawSVArea(drawContext, layout.svX(), layout.svY());
+        drawSVArea(graphics, layout.svX(), layout.svY());
 
         int cursorX = layout.svX() + (int)(saturation * (SV_WIDTH - 1));
         int cursorY = layout.svY() + (int)((1.0f - value) * (SV_HEIGHT - 1));
 
-        drawContext.drawBorder
+        graphics.outline
         (
                 cursorX - 2,
                 cursorY - 2,
@@ -231,13 +234,13 @@ public class ColorPickerPopup
         );
     }
 
-    private void drawHueControl(DrawContext drawContext, PickerLayout layout)
+    private void drawHueControl(GuiGraphicsExtractor graphics, PickerLayout layout)
     {
-        drawHueBar(drawContext, layout.hueX(), layout.hueY());
+        drawHueBar(graphics, layout.hueX(), layout.hueY());
 
         int cursorX = layout.hueX() + (int)(hue * (HUE_WIDTH - 1));
 
-        drawContext.drawBorder
+        graphics.outline
         (
                 cursorX - 2,
                 layout.hueY() - 2,
@@ -247,13 +250,13 @@ public class ColorPickerPopup
         );
     }
 
-    private void drawAlphaControl(DrawContext drawContext, PickerLayout layout)
+    private void drawAlphaControl(GuiGraphicsExtractor graphics, PickerLayout layout)
     {
-        drawAlphaBar(drawContext, layout.alphaX(), layout.alphaY());
+        drawAlphaBar(graphics, layout.alphaX(), layout.alphaY());
 
         int cursorX = layout.alphaX() + (int)(alpha * (ALPHA_WIDTH - 1));
 
-        drawContext.drawBorder
+        graphics.outline
         (
                 cursorX - 2,
                 layout.alphaY() - 2,
@@ -265,17 +268,17 @@ public class ColorPickerPopup
 
     private void drawActionButtons
     (
-            DrawContext  drawContext,
-            TextRenderer textRenderer,
-            PickerLayout layout,
-            int          mouseX,
-            int          mouseY
+            GuiGraphicsExtractor graphics,
+            Font                 font,
+            PickerLayout         layout,
+            int                  mouseX,
+            int                  mouseY
     )
     {
         drawButton
         (
-                drawContext,
-                textRenderer,
+                graphics,
+                font,
                 getResetButtonX(),
                 layout.buttonY(),
                 BUTTON_WIDTH,
@@ -288,8 +291,8 @@ public class ColorPickerPopup
 
         drawButton
         (
-                drawContext,
-                textRenderer,
+                graphics,
+                font,
                 getCancelButtonX(),
                 layout.buttonY(),
                 BUTTON_WIDTH,
@@ -302,8 +305,8 @@ public class ColorPickerPopup
 
         drawButton
         (
-                drawContext,
-                textRenderer,
+                graphics,
+                font,
                 getDoneButtonX(),
                 layout.buttonY(),
                 BUTTON_WIDTH,
@@ -314,7 +317,6 @@ public class ColorPickerPopup
                 true
         );
     }
-
 
     private boolean canReset()
     {
@@ -389,25 +391,25 @@ public class ColorPickerPopup
 
     private void drawHexInput
     (
-            DrawContext  drawContext,
-            TextRenderer textRenderer,
-            PickerLayout layout
+            GuiGraphicsExtractor graphics,
+            Font                 font,
+            PickerLayout         layout
     )
     {
         int inputX = layout.hexX();
         int inputY = layout.hexY();
 
-        drawContext.drawText
+        graphics.text
         (
-                textRenderer,
-                Text.literal("ARGB Hex"),
+                font,
+                "ARGB Hex",
                 inputX,
                 inputY - 10,
                 0xFFAAAAAA,
                 false
         );
 
-        drawContext.fill
+        graphics.fill
         (
                 inputX,
                 inputY,
@@ -416,7 +418,7 @@ public class ColorPickerPopup
                 0xFF050505
         );
 
-        drawContext.drawBorder
+        graphics.outline
         (
                 inputX,
                 inputY,
@@ -429,15 +431,15 @@ public class ColorPickerPopup
 
         int color = getHexTextColor();
 
-        shownText = trimToWidth(textRenderer, shownText, HEX_WIDTH - 8);
+        shownText = trimToWidth(font, shownText, HEX_WIDTH - 8);
 
         int textX = inputX + 4;
-        int textY = inputY + (HEX_HEIGHT - textRenderer.fontHeight) / 2;
+        int textY = inputY + (HEX_HEIGHT - font.lineHeight) / 2;
 
-        drawContext.drawText
+        graphics.text
         (
-                textRenderer,
-                Text.literal(shownText),
+                font,
+                shownText,
                 textX,
                 textY,
                 color,
@@ -446,7 +448,7 @@ public class ColorPickerPopup
 
         if (editingHex)
         {
-            drawHexCursor(drawContext, textRenderer, inputX, inputY);
+            drawHexCursor(graphics, font, inputX, inputY);
         }
     }
 
@@ -477,21 +479,21 @@ public class ColorPickerPopup
 
     private void drawHexCursor
     (
-            DrawContext  drawContext,
-            TextRenderer textRenderer,
-            int          inputX,
-            int          inputY
+            GuiGraphicsExtractor graphics,
+            Font                 font,
+            int                  inputX,
+            int                  inputY
     )
     {
         String cursorBase = hexBuffer.isEmpty() ? "#" : "#" + hexBuffer;
 
         int cursorX = inputX + 4 + Math.min
         (
-                textRenderer.getWidth(cursorBase),
+                font.width(cursorBase),
                 HEX_WIDTH - 10
         );
 
-        drawContext.fill
+        graphics.fill
         (
                 cursorX,
                 inputY + 4,
@@ -568,7 +570,7 @@ public class ColorPickerPopup
             int parsed = (int)Long.parseLong(value, 16);
 
             setFromColor(parsed);
-            onChanged.accept(argb);
+            notifyColorChanged();
         }
         catch (NumberFormatException ignored)
         {
@@ -617,7 +619,7 @@ public class ColorPickerPopup
                 playClickSound();
 
                 setFromColor(resetColor);
-                onChanged.accept(argb);
+                notifyColorChanged();
             }
 
             return true;
@@ -666,7 +668,7 @@ public class ColorPickerPopup
 
             draggingSV = true;
             updateSVFromMouse(mouseX, mouseY, layout.svX(), layout.svY());
-            onChanged.accept(argb);
+            notifyColorChanged();
 
             return true;
         }
@@ -677,7 +679,7 @@ public class ColorPickerPopup
 
             draggingHue = true;
             updateHueFromMouse(mouseX, layout.hueX());
-            onChanged.accept(argb);
+            notifyColorChanged();
 
             return true;
         }
@@ -688,7 +690,7 @@ public class ColorPickerPopup
 
             draggingAlpha = true;
             updateAlphaFromMouse(mouseX, layout.alphaX());
-            onChanged.accept(argb);
+            notifyColorChanged();
 
             return true;
         }
@@ -708,7 +710,7 @@ public class ColorPickerPopup
         if (draggingSV)
         {
             updateSVFromMouse(mouseX, mouseY, layout.svX(), layout.svY());
-            onChanged.accept(argb);
+            notifyColorChanged();
 
             return true;
         }
@@ -716,7 +718,7 @@ public class ColorPickerPopup
         if (draggingHue)
         {
             updateHueFromMouse(mouseX, layout.hueX());
-            onChanged.accept(argb);
+            notifyColorChanged();
 
             return true;
         }
@@ -724,7 +726,7 @@ public class ColorPickerPopup
         if (draggingAlpha)
         {
             updateAlphaFromMouse(mouseX, layout.alphaX());
-            onChanged.accept(argb);
+            notifyColorChanged();
 
             return true;
         }
@@ -742,6 +744,17 @@ public class ColorPickerPopup
         }
 
         return true;
+    }
+
+    private void notifyColorChanged()
+    {
+        if (argb == lastNotifiedColor)
+        {
+            return;
+        }
+
+        lastNotifiedColor = argb;
+        onChanged.accept(argb);
     }
 
 
@@ -810,13 +823,13 @@ public class ColorPickerPopup
 
     private void playClickSound()
     {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
 
         if (client != null)
         {
             client.getSoundManager().play
             (
-                    PositionedSoundInstance.master(SoundEvents.UI_BUTTON_CLICK, 1.0F)
+                    SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F)
             );
         }
     }
@@ -831,16 +844,16 @@ public class ColorPickerPopup
 
     private void drawButton
     (
-            DrawContext  drawContext,
-            TextRenderer textRenderer,
-            int          x,
-            int          y,
-            int          width,
-            int          height,
-            String       label,
-            int          mouseX,
-            int          mouseY,
-            boolean      active
+            GuiGraphicsExtractor graphics,
+            Font                 font,
+            int                  x,
+            int                  y,
+            int                  width,
+            int                  height,
+            String               label,
+            int                  mouseX,
+            int                  mouseY,
+            boolean              active
     )
     {
         boolean hovered = active && isInside(mouseX, mouseY, x, y, width, height);
@@ -850,34 +863,71 @@ public class ColorPickerPopup
         int border = active ? 0xFFFFFFFF : 0xFF777777;
         int color  = active ? 0xFFFFFFFF : 0xFF777777;
 
-        drawContext.fill(x, y, x + width, y + height, background);
-        drawContext.drawBorder(x, y, width, height, border);
-
-        drawContext.drawCenteredTextWithShadow
+        graphics.fill
         (
-                textRenderer,
-                Text.literal(label),
+                x,
+                y,
+                x + width,
+                y + height,
+                background
+        );
+
+        graphics.outline
+        (
+                x,
+                y,
+                width,
+                height,
+                border
+        );
+
+        drawCenteredText
+        (
+                graphics,
+                font,
+                label,
                 x + width / 2,
-                y + (height - textRenderer.fontHeight) / 2,
+                y + (height - font.lineHeight) / 2,
                 color
         );
     }
 
-    private String trimToWidth(TextRenderer textRenderer, String text, int maxWidth)
+    private void drawCenteredText
+    (
+            GuiGraphicsExtractor graphics,
+            Font                 font,
+            String               text,
+            int                  centerX,
+            int                  y,
+            int                  color
+    )
+    {
+        graphics.text
+        (
+                font,
+                text,
+                centerX - font.width(text) / 2,
+                y,
+                color,
+                true
+        );
+    }
+
+    private String trimToWidth(Font font, String text, int maxWidth)
     {
         if (text == null)
         {
             return "";
         }
 
-        if (textRenderer.getWidth(text) <= maxWidth)
+        if (font.width(text) <= maxWidth)
         {
             return text;
         }
 
         String result = text;
 
-        while (!result.isEmpty() && textRenderer.getWidth(result + "...") > maxWidth)
+        while (!result.isEmpty() && font.width(result + "...") > maxWidth)
         {
             result = result.substring(0, result.length() - 1);
         }
@@ -991,14 +1041,14 @@ public class ColorPickerPopup
 
     /* ----- HUE ----- */
 
-    private void drawHueBar(DrawContext drawContext, int hueX, int hueY)
+    private void drawHueBar(GuiGraphicsExtractor graphics, int hueX, int hueY)
     {
         for (int x = 0; x < HUE_WIDTH; x++)
         {
             float h = x / (float)(HUE_WIDTH - 1);
             int rgb = hsvToRgb(h, 1.0f, 1.0f);
 
-            drawContext.fill
+            graphics.fill
             (
                     hueX + x,
                     hueY,
@@ -1022,26 +1072,23 @@ public class ColorPickerPopup
 
     /* ----- SV ----- */
 
-    private void drawSVArea(DrawContext drawContext, int svX, int svY)
+    private void drawSVArea(GuiGraphicsExtractor graphics, int svX, int svY)
     {
         for (int x = 0; x < SV_WIDTH; x++)
         {
             float s = x / (float)(SV_WIDTH - 1);
 
-            for (int y = 0; y < SV_HEIGHT; y++)
-            {
-                float v = 1.0f - y / (float)(SV_HEIGHT - 1);
-                int rgb = hsvToRgb(hue, s, v);
+            int topRgb = hsvToRgb(hue, s, 1.0f);
 
-                drawContext.fill
-                (
-                        svX + x,
-                        svY + y,
-                        svX + x + 1,
-                        svY + y + 1,
-                        0xFF000000 | rgb
-                );
-            }
+            graphics.fillGradient
+            (
+                    svX + x,
+                    svY,
+                    svX + x + 1,
+                    svY + SV_HEIGHT,
+                    0xFF000000 | topRgb,
+                    0xFF000000
+            );
         }
     }
 
@@ -1060,7 +1107,7 @@ public class ColorPickerPopup
 
     /* ----- Alpha ----- */
 
-    private void drawAlphaBar(DrawContext drawContext, int alphaX, int alphaY)
+    private void drawAlphaBar(GuiGraphicsExtractor graphics, int alphaX, int alphaY)
     {
         for (int x = 0; x < ALPHA_WIDTH; x++)
         {
@@ -1068,7 +1115,7 @@ public class ColorPickerPopup
             int rgb   = argb & 0x00FFFFFF;
             int color = ((int)(a * 255) << 24) | rgb;
 
-            drawContext.fill
+            graphics.fill
             (
                     alphaX + x,
                     alphaY,

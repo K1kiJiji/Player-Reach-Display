@@ -2,14 +2,15 @@ package kikijiji.playerreachdisplay.screen;
 
 
 
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.Screen;
 
-import net.minecraft.util.Formatting;
-
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.network.chat.Component;
 
 import kikijiji.playerreachdisplay.PlayerReachDisplay;
 import kikijiji.playerreachdisplay.config.PlayerReachDisplayConfig;
@@ -38,14 +39,13 @@ public class PlayerReachDisplayPositionConfigScreen extends Screen
 
 
 
-    /* ----- 제목 ----- */
+    /* ----- 생성 ----- */
 
     public PlayerReachDisplayPositionConfigScreen(Screen parent, PlayerReachDisplayConfig config)
     {
-        super(Text.literal("Adjust Position").formatted(Formatting.BOLD));
+        super(Component.literal("Adjust Position"));
 
         this.parent = parent;
-
         this.config = config;
     }
 
@@ -61,33 +61,31 @@ public class PlayerReachDisplayPositionConfigScreen extends Screen
             initTempPosition();
         }
 
-        this.clearChildren();
-
         int x = (this.width - (3 * 80 + 2 * 8)) / 2;
         int y = this.height - 40;
 
-        this.addDrawableChild(ButtonWidget.builder
+        this.addRenderableWidget(Button.builder
         (
-                Text.literal("Reset"),
-                buttonWidget ->
+                Component.literal("Reset"),
+                button ->
                 {
                     tempPositionX = 0.0;
                     tempPositionY = 0.0;
                 }
 
-        ).dimensions(x, y, 80, 20).build());
+        ).bounds(x, y, 80, 20).build());
 
-        this.addDrawableChild(ButtonWidget.builder
+        this.addRenderableWidget(Button.builder
         (
-                Text.literal("Cancel"),
-                buttonWidget -> MinecraftClient.getInstance().setScreen(parent)
+                Component.literal("Cancel"),
+                button -> Minecraft.getInstance().setScreen(parent)
 
-        ).dimensions(x + 80 + 8, y, 80, 20).build());
+        ).bounds(x + 80 + 8, y, 80, 20).build());
 
-        this.addDrawableChild(ButtonWidget.builder
+        this.addRenderableWidget(Button.builder
         (
-                Text.literal("Apply"),
-                buttonWidget ->
+                Component.literal("Apply"),
+                button ->
                 {
                     config.useRelativePosition = true;
 
@@ -107,11 +105,13 @@ public class PlayerReachDisplayPositionConfigScreen extends Screen
                         PlayerReachDisplayConfigManager.save(PlayerReachDisplay.CONFIG);
                     }
 
-                    MinecraftClient.getInstance().setScreen(parent);
+                    Minecraft.getInstance().setScreen(parent);
                 }
 
-        ).dimensions(x + (80 + 8) * 2, y, 80, 20).build());
+        ).bounds(x + (80 + 8) * 2, y, 80, 20).build());
     }
+
+
 
     /* ----- 임시 위치 초기화 ----- */
 
@@ -121,15 +121,26 @@ public class PlayerReachDisplayPositionConfigScreen extends Screen
 
         PlayerReachDisplayRenderer.HudLayout layout = PlayerReachDisplayRenderer.measure
         (
-                this.textRenderer,
+                this.font,
                 config,
                 text,
                 this.width,
                 this.height
         );
 
-        tempPositionX = PlayerReachDisplayRenderer.ratioFromPixel(layout.x(), this.width, layout.scaledWidth());
-        tempPositionY = PlayerReachDisplayRenderer.ratioFromPixel(layout.y(), this.height, layout.scaledHeight());
+        tempPositionX = PlayerReachDisplayRenderer.ratioFromPixel
+        (
+                layout.x(),
+                this.width,
+                layout.scaledWidth()
+        );
+
+        tempPositionY = PlayerReachDisplayRenderer.ratioFromPixel
+        (
+                layout.y(),
+                this.height,
+                layout.scaledHeight()
+        );
 
         tempPositionInitialized = true;
     }
@@ -139,25 +150,25 @@ public class PlayerReachDisplayPositionConfigScreen extends Screen
     /* ----- 표시 ----- */
 
     @Override
-    public void render(DrawContext drawContext, int mouseX, int mouseY, float delta)
+    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float delta)
     {
-        this.renderBackground(drawContext, mouseX, mouseY, delta);
-
-        super.render(drawContext, mouseX, mouseY, delta);
-
-        drawContext.drawCenteredTextWithShadow
+        graphics.fill
         (
-                this.textRenderer,
-                this.title,
-                this.width / 2,
-                20,
-                0xFFFFFF
+                0,
+                0,
+                this.width,
+                this.height,
+                0x88000000
         );
+
+        super.extractRenderState(graphics, mouseX, mouseY, delta);
+
+        drawTitle(graphics);
 
         PlayerReachDisplayRenderer.render
         (
-                drawContext,
-                this.textRenderer,
+                graphics,
+                this.font,
                 makePreviewConfig(),
                 2.88,
                 this.width,
@@ -165,7 +176,26 @@ public class PlayerReachDisplayPositionConfigScreen extends Screen
         );
     }
 
+
+
     /* ----- 표시 헬퍼 ----- */
+
+    private void drawTitle(GuiGraphicsExtractor graphics)
+    {
+        String titleText = "Adjust Position";
+
+        Font font = this.font;
+
+        graphics.text
+        (
+                font,
+                titleText,
+                this.width / 2 - font.width(titleText) / 2,
+                20,
+                0xFFFFFFFF,
+                true
+        );
+    }
 
     private PlayerReachDisplayConfig makePreviewConfig()
     {
@@ -181,26 +211,43 @@ public class PlayerReachDisplayPositionConfigScreen extends Screen
 
 
 
+    /* ----- 닫기 ----- */
+
+    @Override
+    public void onClose()
+    {
+        Minecraft.getInstance().setScreen(parent);
+    }
+
+
+
     /* ----- 키 입력 ----- */
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers)
+    public boolean keyPressed(KeyEvent event)
     {
         // ESC
-        if (keyCode == 256)
+        if (event.key() == 256)
         {
-            MinecraftClient.getInstance().setScreen(parent);
+            Minecraft.getInstance().setScreen(parent);
             return true;
         }
 
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return super.keyPressed(event);
     }
+
+
 
     /* ----- 마우스 클릭 ----- */
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button)
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick)
     {
+        double mouseX = event.x();
+        double mouseY = event.y();
+
+        int button = event.button();
+
         if (button == 0)
         {
             PlayerReachDisplayConfig previewConfig = makePreviewConfig();
@@ -209,7 +256,7 @@ public class PlayerReachDisplayPositionConfigScreen extends Screen
 
             PlayerReachDisplayRenderer.HudLayout layout = PlayerReachDisplayRenderer.measure
             (
-                    this.textRenderer,
+                    this.font,
                     previewConfig,
                     text,
                     this.width,
@@ -217,9 +264,9 @@ public class PlayerReachDisplayPositionConfigScreen extends Screen
             );
 
             boolean inside = mouseX >= layout.x() &&
-                    mouseX <  layout.x() + layout.scaledWidth() &&
-                    mouseY >= layout.y() &&
-                    mouseY <  layout.y() + layout.scaledHeight();
+                             mouseX <  layout.x() + layout.scaledWidth() &&
+                             mouseY >= layout.y() &&
+                             mouseY <  layout.y() + layout.scaledHeight();
 
             if (inside)
             {
@@ -235,14 +282,21 @@ public class PlayerReachDisplayPositionConfigScreen extends Screen
             }
         }
 
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.mouseClicked(event, doubleClick);
     }
+
+
 
     /* ----- 마우스 드래그 ----- */
 
     @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double dx, double dy)
+    public boolean mouseDragged(MouseButtonEvent event, double dx, double dy)
     {
+        double mouseX = event.x();
+        double mouseY = event.y();
+
+        int button = event.button();
+
         if (dragging && button == 0)
         {
             PlayerReachDisplayConfig previewConfig = makePreviewConfig();
@@ -251,7 +305,7 @@ public class PlayerReachDisplayPositionConfigScreen extends Screen
 
             PlayerReachDisplayRenderer.HudLayout layout = PlayerReachDisplayRenderer.measure
             (
-                    this.textRenderer,
+                    this.font,
                     previewConfig,
                     text,
                     this.width,
@@ -276,25 +330,38 @@ public class PlayerReachDisplayPositionConfigScreen extends Screen
             int clampedX = Math.clamp(rawX, PlayerReachDisplayRenderer.HUD_MARGIN, maxX);
             int clampedY = Math.clamp(rawY, PlayerReachDisplayRenderer.HUD_MARGIN, maxY);
 
-            tempPositionX = PlayerReachDisplayRenderer.ratioFromPixel(clampedX, this.width, layout.scaledWidth());
-            tempPositionY = PlayerReachDisplayRenderer.ratioFromPixel(clampedY, this.height, layout.scaledHeight());
+            tempPositionX = PlayerReachDisplayRenderer.ratioFromPixel
+            (
+                    clampedX,
+                    this.width,
+                    layout.scaledWidth()
+            );
+
+            tempPositionY = PlayerReachDisplayRenderer.ratioFromPixel
+            (
+                    clampedY,
+                    this.height,
+                    layout.scaledHeight()
+            );
 
             return true;
         }
 
-        return super.mouseDragged(mouseX, mouseY, button, dx, dy);
+        return super.mouseDragged(event, dx, dy);
     }
+
+
 
     /* ----- 마우스 릴리즈 ----- */
 
     @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button)
+    public boolean mouseReleased(MouseButtonEvent event)
     {
-        if (button == 0)
+        if (event.button() == 0)
         {
             dragging = false;
         }
 
-        return super.mouseReleased(mouseX, mouseY, button);
+        return super.mouseReleased(event);
     }
 }
