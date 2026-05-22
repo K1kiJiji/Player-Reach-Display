@@ -81,9 +81,9 @@ public final class PlayerReachDisplayRenderer
 
         var matrices = drawContext.getMatrices();
 
-        matrices.push();
-        matrices.translate(layout.x(), layout.y(), 0);
-        matrices.scale(layout.scale(), layout.scale(), 1.0f);
+        matrices.pushMatrix();
+        matrices.translate((float)layout.x(), (float)layout.y());
+        matrices.scale(layout.scale(), layout.scale());
 
         if (config.showBackground)
         {
@@ -118,7 +118,7 @@ public final class PlayerReachDisplayRenderer
                 false
         );
 
-        matrices.pop();
+        matrices.popMatrix();
     }
 
 
