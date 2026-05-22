@@ -8,29 +8,33 @@ import org.slf4j.LoggerFactory;
 import net.fabricmc.api.ClientModInitializer;
 
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
-import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 
-import net.minecraft.world.World;
+import net.minecraft.resources.Identifier;
 
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.render.RenderTickCounter;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
+
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.EntityHitResult;
+
+import net.minecraft.util.Mth;
 
 import kikijiji.playerreachdisplay.filter.EntityFilters;
 import kikijiji.playerreachdisplay.config.PlayerReachDisplayConfig;
-import kikijiji.playerreachdisplay.render.PlayerReachDisplayRenderer;
 import kikijiji.playerreachdisplay.config.PlayerReachDisplayConfigManager;
 import kikijiji.playerreachdisplay.screen.PlayerReachDisplayPositionConfigScreen;
+
+import kikijiji.playerreachdisplay.render.PlayerReachDisplayRenderer;
 
 
 
@@ -53,7 +57,12 @@ public class PlayerReachDisplay implements ClientModInitializer
         CONFIG = PlayerReachDisplayConfigManager.load();
 
         AttackEntityCallback.EVENT.register(PlayerReachDisplay::onAttackEntity);
-        HudRenderCallback.EVENT.register(PlayerReachDisplay::renderHud);
+
+        HudElementRegistry.addLast
+        (
+                Identifier.fromNamespaceAndPath(MOD_ID, "hud"),
+                PlayerReachDisplay::renderHud
+        );
     }
 
 
@@ -61,58 +70,58 @@ public class PlayerReachDisplay implements ClientModInitializer
     /* ----- 공격 기록 ----- */
 
     @SuppressWarnings("SameReturnValue")
-    private static ActionResult onAttackEntity
+    private static InteractionResult onAttackEntity
     (
-            PlayerEntity    player,
-            World           world,
-            Hand            hand,
+            Player          player,
+            Level           level,
+            InteractionHand hand,
             Entity          entity,
             EntityHitResult hitResult
     )
     {
-        if (!world.isClient() || entity == null)
+        if (!level.isClientSide() || entity == null)
         {
-            return ActionResult.PASS;
+            return InteractionResult.PASS;
         }
 
         if (CONFIG == null)
         {
-            return ActionResult.PASS;
+            return InteractionResult.PASS;
         }
 
         if (!EntityFilters.shouldTrack(entity, CONFIG))
         {
-            return ActionResult.PASS;
+            return InteractionResult.PASS;
         }
 
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
 
         lastHitDistance   = computeHitDistance(client, entity);
         lastHitTimeMillis = System.currentTimeMillis();
 
-        return ActionResult.PASS;
+        return InteractionResult.PASS;
     }
 
 
 
     /* ----- 거리 계산 ----- */
 
-    private static double computeHitDistance(MinecraftClient client, Entity target)
+    private static double computeHitDistance(Minecraft client, Entity target)
     {
-        PlayerEntity player = client.player;
+        Player player = client.player;
 
         if (player == null || target == null)
         {
             return 0.0;
         }
 
-        Vec3d eyePosition = player.getCameraPosVec(1.0F);
+        Vec3 eyePosition = player.getEyePosition(1.0F);
 
-        Box hitBox = target.getBoundingBox();
+        AABB hitBox = target.getBoundingBox();
 
-        double clampedX = MathHelper.clamp(eyePosition.x, hitBox.minX, hitBox.maxX);
-        double clampedY = MathHelper.clamp(eyePosition.y, hitBox.minY, hitBox.maxY);
-        double clampedZ = MathHelper.clamp(eyePosition.z, hitBox.minZ, hitBox.maxZ);
+        double clampedX = Mth.clamp(eyePosition.x, hitBox.minX, hitBox.maxX);
+        double clampedY = Mth.clamp(eyePosition.y, hitBox.minY, hitBox.maxY);
+        double clampedZ = Mth.clamp(eyePosition.z, hitBox.minZ, hitBox.maxZ);
 
         double dx = clampedX - eyePosition.x;
         double dy = clampedY - eyePosition.y;
@@ -125,9 +134,9 @@ public class PlayerReachDisplay implements ClientModInitializer
 
     /* ----- HUD 표시 ----- */
 
-    private static void renderHud(DrawContext drawContext, RenderTickCounter tickCounter)
+    private static void renderHud(GuiGraphicsExtractor graphics, DeltaTracker tickCounter)
     {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
 
         if (shouldSkipHud(client))
         {
@@ -145,13 +154,13 @@ public class PlayerReachDisplay implements ClientModInitializer
 
         double displayDistance = getDisplayDistance(config, now);
 
-        int screenWidth  = client.getWindow().getScaledWidth();
-        int screenHeight = client.getWindow().getScaledHeight();
+        int screenWidth  = client.getWindow().getGuiScaledWidth();
+        int screenHeight = client.getWindow().getGuiScaledHeight();
 
         PlayerReachDisplayRenderer.render
         (
-                drawContext,
-                client.textRenderer,
+                graphics,
+                client.font,
                 config,
                 displayDistance,
                 screenWidth,
@@ -159,9 +168,11 @@ public class PlayerReachDisplay implements ClientModInitializer
         );
     }
 
+
+
     /* ----- HUD 표시 헬퍼 ----- */
 
-    private static boolean shouldSkipHud(MinecraftClient client)
+    private static boolean shouldSkipHud(Minecraft client)
     {
         if (client == null || client.player == null)
         {
@@ -173,8 +184,10 @@ public class PlayerReachDisplay implements ClientModInitializer
             return true;
         }
 
-        return client.currentScreen instanceof PlayerReachDisplayPositionConfigScreen;
+        return client.screen instanceof PlayerReachDisplayPositionConfigScreen;
     }
+
+
 
     /* ----- 표시 거리 결정 ----- */
 
