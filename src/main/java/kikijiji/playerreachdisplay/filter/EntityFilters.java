@@ -1,15 +1,12 @@
 package kikijiji.playerreachdisplay.filter;
 
 
+import kikijiji.playerreachdisplay.config.PlayerReachDisplayConfig;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.entity.Entity;
 
 import java.util.List;
 import java.util.Locale;
-
-import net.minecraft.entity.Entity;
-import net.minecraft.registry.Registries;
-
-import kikijiji.playerreachdisplay.config.PlayerReachDisplayConfig;
-
 
 
 public final class EntityFilters
@@ -56,6 +53,7 @@ public final class EntityFilters
     }
 
 
+
     /* ----- 모드별 판단 ----- */
 
     private static boolean shouldTrackByWhitelist(String entityId, List<String> whitelist)
@@ -79,19 +77,29 @@ public final class EntityFilters
     }
 
 
+
     /* ----- ID 정규화 ----- */
 
     private static String getEntityId(Entity entity)
     {
-        return normalizeEntityId
-        (
-                Registries.ENTITY_TYPE.getId(entity.getType()).toString()
-        );
+        var id = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
+
+        if (id == null)
+        {
+            return "";
+        }
+
+        return normalizeEntityId(id.toString());
     }
 
     private static boolean containsEntityId(List<String> list, String entityId)
     {
         String normalizedEntityId = normalizeEntityId(entityId);
+
+        if (normalizedEntityId.isEmpty())
+        {
+            return false;
+        }
 
         for (String raw : list)
         {

@@ -1,28 +1,22 @@
 package kikijiji.playerreachdisplay.config;
 
 
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonParseException;
-
-import java.io.Reader;
-import java.io.Writer;
-import java.io.IOException;
-
-import java.util.List;
-import java.util.Objects;
-import java.util.ArrayList;
-import java.util.Comparator;
-
-import java.nio.file.Path;
-import java.nio.file.Files;
-
-import net.fabricmc.loader.api.FabricLoader;
-
 import kikijiji.playerreachdisplay.PlayerReachDisplay;
 import kikijiji.playerreachdisplay.config.PlayerReachDisplayConfig.DistanceColorBand;
+import net.fabricmc.loader.api.FabricLoader;
 
+import java.io.IOException;
+import java.io.Reader;
+import java.io.Writer;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
 
 
 public class PlayerReachDisplayConfigManager
@@ -137,7 +131,7 @@ public class PlayerReachDisplayConfigManager
             config.distanceBands.removeLast();
         }
 
-        for (PlayerReachDisplayConfig.DistanceColorBand band : config.distanceBands)
+        for (DistanceColorBand band : config.distanceBands)
         {
             band.fromDistance = Math.clamp
             (
