@@ -1,12 +1,10 @@
 package kikijiji.playerreachdisplay.config;
 
 
-
 import com.google.gson.annotations.SerializedName;
 
-import java.util.List;
 import java.util.ArrayList;
-
+import java.util.List;
 
 
 public class PlayerReachDisplayConfig
